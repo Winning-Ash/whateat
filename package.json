@@ -1,0 +1,9 @@
+{
+  "name": "whateat-project",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "start:backend": "npm --prefix backend run start:dev",
+    "test": "npm --prefix backend test"
+  }
+}
