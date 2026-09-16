@@ -1,5 +1,6 @@
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { FOOD_CATEGORIES, FoodCategory } from '../restaurant.categories';
 
 export class LocationQueryDto {
   // Korean Local API coverage; also avoids polar/dateline rectangle ambiguity.
@@ -11,6 +12,9 @@ export class LocationQueryDto {
 
   @Type(() => Number) @IsInt() @Min(100) @Max(500)
   radius!: number;
+
+  @IsOptional() @IsIn(FOOD_CATEGORIES)
+  category?: FoodCategory;
 
   @IsOptional()
   @Transform(({ value }) => value === 'true' ? true : value === 'false' ? false : value)

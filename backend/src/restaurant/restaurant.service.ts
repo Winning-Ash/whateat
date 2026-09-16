@@ -6,6 +6,7 @@ import { bounds, distance, grid, Point, Rect, split } from '../common/utils/dist
 import { DailyLimitException, KakaoService } from '../kakao/kakao.service';
 import { LocationQueryDto } from './dto/location-query.dto';
 import { CandidateSet, Restaurant } from './restaurant.types';
+import { foodCategory } from './restaurant.categories';
 
 @Injectable()
 export class RestaurantService {
@@ -35,13 +36,14 @@ export class RestaurantService {
       try { value = await pending; }
       finally { if (this.pending.get(key) === pending) this.pending.delete(key); }
     }
-    const restaurants = value.restaurants.filter(place => distance(query, place) <= query.radius);
+    const restaurants = value.restaurants.filter(place => distance(query, place) <= query.radius &&
+      (!query.category || foodCategory(place.category) === query.category));
     return { restaurants, candidateCount: restaurants.length, cached, partial: value.partial };
   }
 
   async random(query: LocationQueryDto) {
     const { restaurants, ...meta } = await this.candidates(query);
-    if (!restaurants.length) throw new NotFoundException('No restaurant candidates within the requested radius');
+    if (!restaurants.length) throw new NotFoundException('No restaurant candidates match the requested radius and category');
     return { restaurant: restaurants[randomInt(restaurants.length)], ...meta };
   }
 

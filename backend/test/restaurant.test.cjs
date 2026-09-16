@@ -11,6 +11,7 @@ const { MemoryDailyCounter } = require('../dist/cache/daily-counter.service');
 const { RestaurantService } = require('../dist/restaurant/restaurant.service');
 const { KakaoService, DailyLimitException } = require('../dist/kakao/kakao.service');
 const { distance } = require('../dist/common/utils/distance.util');
+const { foodCategory, FOOD_CATEGORIES } = require('../dist/restaurant/restaurant.categories');
 const query = { lat: 37.5, lng: 127, radius: 300 };
 const doc = (id, lat = 37.5, lng = 127) => ({ id, place_name: '식당', address_name: '서울',
   road_address_name: '서울', x: String(lng), y: String(lat), category_name: '음식점 > 한식', place_url: 'https://place.map.kakao.com/' + id });
@@ -33,6 +34,31 @@ test('deduplicates, filters actual radius, shares nearby cache and coalesces con
   const nearby = await service.candidates({ ...query, lat: 37.50001 });
   assert.equal(nearby.cached, true);
   assert.equal(calls, 1);
+});
+
+test('category selection filters cached candidates and random draws without extra searches', async () => {
+  let calls = 0;
+  const { service } = setup(async () => {
+    calls++;
+    return result([doc('korean'), { ...doc('chinese'), category_name: '음식점 > 중식 > 중국요리' },
+      { ...doc('pizza'), category_name: '음식점 > 양식 > 피자' }, doc('outside', 37.503)]);
+  });
+  const selected = await service.candidates({ ...query, category: '한식' });
+  assert.deepEqual(selected.restaurants.map(place => place.id), ['korean']);
+  assert.equal(selected.candidateCount, 1);
+  for (let i = 0; i < 10; i++) {
+    const draw = await service.random({ ...query, category: '중식', cacheOnly: true });
+    assert.equal(draw.restaurant.id, 'chinese');
+    assert.equal(draw.cached, true);
+  }
+  assert.equal((await service.candidates(query)).candidateCount, 3);
+  assert.equal((await service.candidates({ ...query, category: '일식' })).candidateCount, 0);
+  await assert.rejects(service.random({ ...query, category: '일식' }), e => e.getStatus() === 404);
+  assert.equal(calls, 1);
+  assert.equal(foodCategory('음식점 > 양식 > 피자'), '피자');
+  assert.equal(foodCategory('음식점 > 한식 > 육류,고기'), '한식');
+  assert.equal(foodCategory('음식점 > 퓨전요리'), '기타');
+  assert.equal(foodCategory('음식점 > 한식전문점'), '기타');
 });
 
 test('cacheOnly miss never queries Kakao; empty results are cached', async () => {
@@ -119,7 +145,7 @@ test('daily reservation is atomic for concurrent callers and resets by date', as
 });
 
 test('missing key never consumes daily quota', async () => {
-  const config = new ConfigService(validateEnv({}));
+  const config = new ConfigService(validateEnv({ KAKAO_REST_API_KEY: '' }));
   const kakao = new KakaoService(config, { reserve: async () => { throw new Error('must not reserve'); } });
   await assert.rejects(kakao.search({}), e => e.getStatus() === 503);
 });
@@ -140,9 +166,13 @@ test('HTTP DTO validation rejects malformed location, unknown fields and invalid
   try {
     await app.listen(0, '127.0.0.1');
     const url = await app.getUrl();
+    const categories = await fetch(`${url}/restaurants/categories`);
+    assert.equal(categories.status, 200);
+    assert.deepEqual((await categories.json()).categories, FOOD_CATEGORIES);
     for (const params of ['lat=37.5&lng=127&radius=99', 'lat=37.5&lng=127&radius=501',
       'lat=37.5&lng=127&radius=100.5', 'lat=NaN&lng=127&radius=300', 'radius=300',
-      'lat=37.5&lng=127&radius=300&cacheOnly=1', 'lat=37.5&lng=127&radius=300&key=secret']) {
+      'lat=37.5&lng=127&radius=300&cacheOnly=1', 'lat=37.5&lng=127&radius=300&key=secret',
+      'lat=37.5&lng=127&radius=300&category=invalid', 'lat=37.5&lng=127&radius=300&category=']) {
       assert.equal((await fetch(`${url}/restaurants/random?${params}`)).status, 400);
     }
     assert.equal(calls, 0);
@@ -151,6 +181,13 @@ test('HTTP DTO validation rejects malformed location, unknown fields and invalid
     }
     const response = await fetch(`${url}/restaurants/random?lat=37.5&lng=127&radius=100&cacheOnly=true`);
     assert.equal((await response.json()).cached, true);
+    assert.equal(calls, 2);
+    const selected = await fetch(`${url}/restaurants/random?lat=37.5&lng=127&radius=100&category=${encodeURIComponent('한식')}`);
+    assert.equal(selected.status, 200);
+    assert.equal((await selected.json()).restaurant.id, '1');
+    const empty = await fetch(`${url}/restaurants/candidates?lat=37.5&lng=127&radius=100&category=${encodeURIComponent('중식')}`);
+    assert.equal(empty.status, 200);
+    assert.equal((await empty.json()).candidateCount, 0);
     assert.equal(calls, 2);
   } finally { await app.close(); }
 });
