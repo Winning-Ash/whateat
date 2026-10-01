@@ -61,6 +61,19 @@ test('category selection filters cached candidates and random draws without extr
   assert.equal(foodCategory('음식점 > 한식전문점'), '기타');
 });
 
+test('exclusions are per request and never mutate the shared cache', async () => {
+  let calls = 0;
+  const { service } = setup(async () => { calls++; return result([doc('1'), doc('2')]); });
+  const filtered = await service.random({ ...query, excludeIds: ['1'] });
+  assert.equal(filtered.restaurant.id, '2');
+  assert.equal(filtered.candidateCount, 1);
+  assert.equal((await service.random({ ...query, excludeIds: ['2'], cacheOnly: true })).restaurant.id, '1');
+  assert.equal((await service.candidates(query)).candidateCount, 2);
+  assert.equal((await service.candidates({ ...query, excludeIds: ['1', '2'] })).candidateCount, 0);
+  await assert.rejects(service.random({ ...query, excludeIds: ['1', '2'] }), e => e.getStatus() === 404);
+  assert.equal(calls, 1);
+});
+
 test('cacheOnly miss never queries Kakao; empty results are cached', async () => {
   let calls = 0;
   const { service } = setup(async () => { calls++; return result([]); });
@@ -172,7 +185,9 @@ test('HTTP DTO validation rejects malformed location, unknown fields and invalid
     for (const params of ['lat=37.5&lng=127&radius=99', 'lat=37.5&lng=127&radius=501',
       'lat=37.5&lng=127&radius=100.5', 'lat=NaN&lng=127&radius=300', 'radius=300',
       'lat=37.5&lng=127&radius=300&cacheOnly=1', 'lat=37.5&lng=127&radius=300&key=secret',
-      'lat=37.5&lng=127&radius=300&category=invalid', 'lat=37.5&lng=127&radius=300&category=']) {
+      'lat=37.5&lng=127&radius=300&category=invalid', 'lat=37.5&lng=127&radius=300&category=',
+      'lat=37.5&lng=127&radius=300&excludeIds=abc', 'lat=37.5&lng=127&radius=300&excludeIds=',
+      'lat=37.5&lng=127&radius=300&excludeIds=' + Array(101).fill('1').join(',')]) {
       assert.equal((await fetch(`${url}/restaurants/random?${params}`)).status, 400);
     }
     assert.equal(calls, 0);
@@ -185,6 +200,10 @@ test('HTTP DTO validation rejects malformed location, unknown fields and invalid
     const selected = await fetch(`${url}/restaurants/random?lat=37.5&lng=127&radius=100&category=${encodeURIComponent('한식')}`);
     assert.equal(selected.status, 200);
     assert.equal((await selected.json()).restaurant.id, '1');
+    assert.equal((await fetch(`${url}/restaurants/random?lat=37.5&lng=127&radius=100&excludeIds=1,2`)).status, 404);
+    const excluded = await fetch(`${url}/restaurants/candidates?lat=37.5&lng=127&radius=100&excludeIds=1`);
+    assert.equal((await excluded.json()).candidateCount, 0);
+    assert.equal((await fetch(`${url}/restaurants/random?lat=37.5&lng=127&radius=100`)).status, 200);
     const empty = await fetch(`${url}/restaurants/candidates?lat=37.5&lng=127&radius=100&category=${encodeURIComponent('중식')}`);
     assert.equal(empty.status, 200);
     assert.equal((await empty.json()).candidateCount, 0);

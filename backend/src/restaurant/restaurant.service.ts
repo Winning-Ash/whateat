@@ -36,14 +36,15 @@ export class RestaurantService {
       try { value = await pending; }
       finally { if (this.pending.get(key) === pending) this.pending.delete(key); }
     }
-    const restaurants = value.restaurants.filter(place => distance(query, place) <= query.radius &&
+    const excluded = new Set(query.excludeIds ?? []);
+    const restaurants = value.restaurants.filter(place => !excluded.has(place.id) && distance(query, place) <= query.radius &&
       (!query.category || foodCategory(place.category) === query.category));
     return { restaurants, candidateCount: restaurants.length, cached, partial: value.partial };
   }
 
   async random(query: LocationQueryDto) {
     const { restaurants, ...meta } = await this.candidates(query);
-    if (!restaurants.length) throw new NotFoundException('No restaurant candidates match the requested radius and category');
+    if (!restaurants.length) throw new NotFoundException('No restaurant candidates match the requested radius, category and exclusions');
     return { restaurant: restaurants[randomInt(restaurants.length)], ...meta };
   }
 
