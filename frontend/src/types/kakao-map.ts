@@ -6,6 +6,16 @@ export interface KakaoLatLng {
 export interface KakaoMapInstance {
   relayout(): void;
   setCenter(position: KakaoLatLng): void;
+  getProjection(): KakaoMapProjection;
+}
+
+export interface KakaoMapPoint {
+  x: number;
+  y: number;
+}
+
+export interface KakaoMapProjection {
+  pointFromCoords(position: KakaoLatLng): KakaoMapPoint;
 }
 
 export interface KakaoMarkerInstance {
@@ -24,6 +34,11 @@ export interface KakaoCircleInstance {
   setZIndex(zIndex: number): void;
 }
 
+export interface KakaoCustomOverlayInstance {
+  setMap(map: KakaoMapInstance | null): void;
+  setPosition(position: KakaoLatLng): void;
+}
+
 export interface KakaoMapsApi {
   load(callback: () => void): void;
   LatLng: new (lat: number, lng: number) => KakaoLatLng;
@@ -35,6 +50,14 @@ export interface KakaoMapsApi {
     map?: KakaoMapInstance;
     position: KakaoLatLng;
   }) => KakaoMarkerInstance;
+  CustomOverlay: new (options: {
+    map?: KakaoMapInstance;
+    position: KakaoLatLng;
+    content: HTMLElement;
+    xAnchor?: number;
+    yAnchor?: number;
+    zIndex?: number;
+  }) => KakaoCustomOverlayInstance;
   Circle: new (options: {
     map?: KakaoMapInstance;
     center: KakaoLatLng;
@@ -57,6 +80,16 @@ export interface KakaoMapsApi {
       target: KakaoMapInstance,
       type: 'click',
       handler: (event: KakaoMapMouseEvent) => void,
+    ): void;
+    addListener(
+      target: KakaoMapInstance,
+      type: 'zoom_changed',
+      handler: () => void,
+    ): void;
+    removeListener(
+      target: KakaoMapInstance,
+      type: 'zoom_changed',
+      handler: () => void,
     ): void;
   };
 }

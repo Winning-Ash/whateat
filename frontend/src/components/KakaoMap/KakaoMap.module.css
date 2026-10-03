@@ -19,6 +19,97 @@
   max-width: none;
 }
 
+.radar {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 2px solid rgb(224 49 49 / 72%);
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    circle,
+    transparent 0,
+    transparent 24%,
+    rgb(224 49 49 / 12%) 25%,
+    transparent 26%,
+    transparent 49%,
+    rgb(224 49 49 / 14%) 50%,
+    transparent 51%
+  );
+  pointer-events: none;
+}
+
+.radar::before {
+  position: absolute;
+  inset: -1px;
+  background: conic-gradient(
+    from 0deg,
+    rgb(224 49 49 / 0%) 0deg,
+    rgb(224 49 49 / 8%) 250deg,
+    rgb(224 49 49 / 55%) 345deg,
+    rgb(224 49 49 / 92%) 360deg
+  );
+  content: '';
+  transform-origin: center;
+  animation: radar-sweep 1.6s linear infinite;
+}
+
+.radar::after {
+  position: absolute;
+  top: 0;
+  left: calc(50% - 1px);
+  width: 2px;
+  height: 50%;
+  background: #e03131;
+  box-shadow: 0 0 8px rgb(224 49 49 / 85%);
+  content: '';
+  transform-origin: center bottom;
+  animation: radar-sweep 1.6s linear infinite;
+}
+
+.resultPin {
+  position: relative;
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  background: #fee500;
+  border: 3px solid #202124;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: -3px 3px 8px rgb(0 0 0 / 28%);
+  transform: rotate(-45deg);
+  pointer-events: none;
+}
+
+.resultPinDot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  background: #202124;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.resultLabel {
+  max-width: 200px;
+  padding: 7px 10px;
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #202124;
+  border: 2px solid #fff;
+  border-radius: 9px;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 28%);
+  pointer-events: none;
+}
+
+@keyframes radar-sweep {
+  to { transform: rotate(360deg); }
+}
+
 .error {
   position: absolute;
   top: 50%;

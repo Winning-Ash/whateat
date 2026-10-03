@@ -2,7 +2,20 @@ require('reflect-metadata');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { ConfigService } = require('@nestjs/config');
-const { NestFactory } = require('@nestjs/core');
+const { Test } = require('@nestjs/testing');
+const { getConnectionToken } = require('@nestjs/mongoose');
+const { Module } = require('@nestjs/common');
+const { AuthModule } = require('../dist/auth/auth.module');
+const { LikesModule } = require('../dist/likes/likes.module');
+const { AuthService } = require('../dist/auth/auth.service');
+const { ExclusionsModule } = require('../dist/exclusions/exclusions.module');
+const { ExclusionsService } = require('../dist/exclusions/exclusions.service');
+class NoAuthModule {}
+Module({ providers: [{ provide: AuthService, useValue: {} }], exports: [AuthService] })(NoAuthModule);
+class NoExclusionsModule {}
+Module({ providers: [{ provide: ExclusionsService, useValue: {} }], exports: [ExclusionsService] })(NoExclusionsModule);
+// Tests do not connect to Atlas or depend on developer credentials.
+process.env.MONGODB_URI = 'mongodb://127.0.0.1/whateat_test';
 const { AppModule } = require('../dist/app.module');
 const { createValidationPipe } = require('../dist/common/validation');
 const { validateEnv } = require('../dist/config/env.validation');
@@ -19,7 +32,7 @@ const result = (documents, total = documents.length, pageable = total, end = tru
   documents, meta: { total_count: total, pageable_count: pageable, is_end: end },
 });
 function setup(search, overrides = {}) {
-  const config = new ConfigService(validateEnv(overrides));
+  const config = new ConfigService(validateEnv({ MONGODB_URI: process.env.MONGODB_URI, ...overrides }));
   const cache = new MemoryCacheService(config);
   return { service: new RestaurantService(config, cache, { search }), cache, config };
 }
@@ -158,7 +171,7 @@ test('daily reservation is atomic for concurrent callers and resets by date', as
 });
 
 test('missing key never consumes daily quota', async () => {
-  const config = new ConfigService(validateEnv({ KAKAO_REST_API_KEY: '' }));
+  const config = new ConfigService(validateEnv({ MONGODB_URI: process.env.MONGODB_URI, KAKAO_REST_API_KEY: '' }));
   const kakao = new KakaoService(config, { reserve: async () => { throw new Error('must not reserve'); } });
   await assert.rejects(kakao.search({}), e => e.getStatus() === 503);
 });
@@ -166,12 +179,24 @@ test('missing key never consumes daily quota', async () => {
 test('Haversine uses meters and environment rejects dangerous configuration', () => {
   assert.equal(distance(query, query), 0);
   assert.ok(distance(query, { ...query, lat: 37.501 }) > 111);
-  assert.throws(() => validateEnv({ KAKAO_DAILY_LIMIT: -1 }));
-  assert.throws(() => validateEnv({ REDIS_URL: 'redis://localhost' }));
+  assert.throws(() => validateEnv({ MONGODB_URI: process.env.MONGODB_URI, KAKAO_DAILY_LIMIT: -1 }));
+  assert.throws(() => validateEnv({ MONGODB_URI: process.env.MONGODB_URI, REDIS_URL: 'redis://localhost' }));
+  assert.throws(() => validateEnv({}), /MONGODB_URI/);
+  assert.throws(() => validateEnv({ MONGODB_URI: 'https://user:secret@example.com' }), error =>
+    error.message.includes('MONGODB_URI') && !error.message.includes('secret'));
+  assert.equal(validateEnv({ MONGODB_URI: process.env.MONGODB_URI }).MONGODB_DB_NAME, 'whateat');
+  assert.deepEqual(validateEnv({ MONGODB_URI: process.env.MONGODB_URI, MONGODB_DNS_SERVERS: '1.1.1.1, 8.8.8.8' }).MONGODB_DNS_SERVERS, ['1.1.1.1', '8.8.8.8']);
+  assert.throws(() => validateEnv({ MONGODB_URI: process.env.MONGODB_URI, MONGODB_DNS_SERVERS: 'bad-host' }), /MONGODB_DNS_SERVERS/);
+  assert.throws(() => validateEnv({ MONGODB_URI: process.env.MONGODB_URI, MONGODB_DB_NAME: 'bad/name' }), /MONGODB_DB_NAME/);
 });
 
 test('HTTP DTO validation rejects malformed location, unknown fields and invalid radius', async () => {
-  const app = await NestFactory.create(AppModule, { logger: false });
+  const module = await Test.createTestingModule({ imports: [AppModule] })
+    .overrideModule(AuthModule).useModule(NoAuthModule)
+    .overrideModule(LikesModule).useModule(NoAuthModule)
+    .overrideModule(ExclusionsModule).useModule(NoExclusionsModule)
+    .overrideProvider(getConnectionToken()).useValue({ close: async () => {} }).compile();
+  const app = module.createNestApplication({ logger: false });
   app.useGlobalPipes(createValidationPipe());
   const kakao = app.get(KakaoService);
   let calls = 0;

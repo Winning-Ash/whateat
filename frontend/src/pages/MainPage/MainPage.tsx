@@ -6,6 +6,13 @@ import { FOOD_CATEGORIES, FoodCategory, Restaurant } from '../../types';
 import styles from './MainPage.module.css';
 
 type PermissionDialog = 'request' | 'denied';
+const RADAR_ROTATION_MS = 1600;
+
+function waitForRadarRotation() {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, RADAR_ROTATION_MS);
+  });
+}
 
 export default function MainPage() {
   const [selectedLocation, setSelectedLocation] = useState<MapLocation>();
@@ -84,11 +91,14 @@ export default function MainPage() {
     setNotice(undefined);
 
     try {
-      const result = await getRandomRestaurant({
-        ...selectedLocation,
-        radius,
-        category,
-      });
+      const [result] = await Promise.all([
+        getRandomRestaurant({
+          ...selectedLocation,
+          radius,
+          category,
+        }),
+        waitForRadarRotation(),
+      ]);
       setRecommendation(result.restaurant);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
@@ -107,6 +117,8 @@ export default function MainPage() {
         selectedLocation={selectedLocation}
         radius={radius}
         locationFocusKey={locationFocusKey}
+        recommendation={recommendation}
+        isSearching={recommending}
         onSelectLocation={selectLocation}
       />
 
@@ -124,7 +136,11 @@ export default function MainPage() {
         <aside className={styles.filterPanel} aria-label="음식점 검색 조건">
           <label className={styles.field}>
             <span>검색 반경</span>
-            <select value={radius} onChange={(event) => setRadius(Number(event.target.value))}>
+            <select
+              value={radius}
+              disabled={recommending}
+              onChange={(event) => setRadius(Number(event.target.value))}
+            >
               {[100, 200, 300, 400, 500].map((value) => (
                 <option key={value} value={value}>{value}m</option>
               ))}
@@ -135,6 +151,7 @@ export default function MainPage() {
             <span>메뉴 카테고리</span>
             <select
               value={category ?? ''}
+              disabled={recommending}
               onChange={(event) => setCategory(event.target.value as FoodCategory || undefined)}
             >
               <option value="">전체</option>
@@ -163,7 +180,7 @@ export default function MainPage() {
         type="button"
         aria-label="현재 위치 찾기"
         onClick={() => void findCurrentLocation()}
-        disabled={locating}
+        disabled={locating || recommending}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4" />
@@ -175,9 +192,9 @@ export default function MainPage() {
         className={styles.rouletteButton}
         type="button"
         onClick={() => void recommendRestaurant()}
-        disabled={recommending}
+        disabled={recommending || locating}
       >
-        {recommending ? '추천 중' : '룰렛'}
+        {recommending ? '탐색 중...' : '룰렛'}
       </button>
 
       <nav className={styles.bottomBar} aria-label="하단 메뉴" />
