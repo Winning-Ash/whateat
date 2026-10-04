@@ -29,7 +29,8 @@ export class ExclusionsController {
   @HttpCode(204)
   @Header('Cache-Control', 'no-store')
   async add(@Req() req: Request, @Body() body: AddExclusionDto) {
-    await this.exclusions.add((await this.user(req, true)).id, body);
+    const user = await this.user(req, true);
+    await this.auth.withMemberWrite(user.id, session => this.exclusions.add(user.id, body, session));
   }
 
   @Delete(':restaurantId')

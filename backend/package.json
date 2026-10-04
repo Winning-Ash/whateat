@@ -10,6 +10,7 @@
     "auth:check": "npm run build && node scripts/check-auth.cjs",
     "exclusions:check": "npm run build && node scripts/check-exclusions.cjs",
     "likes:check": "npm run build && node scripts/check-likes.cjs",
+    "withdrawal:check": "npm run build && node scripts/check-withdrawal.cjs",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "start:dev": "node --watch -r ts-node/register src/main.ts",

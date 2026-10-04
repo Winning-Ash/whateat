@@ -34,7 +34,7 @@ test('member exclusions are isolated, idempotent and merged with query filters w
       address_name: '서울', road_address_name: '서울', category_name: '음식점 > 한식', place_url: '' })),
     meta: { total_count: 2, pageable_count: 2, is_end: true } };
   } });
-  const auth = { me: async token => { if (!['A', 'B'].includes(token)) throw new UnauthorizedException(); return { id: token }; } };
+  const auth = { withMemberWrite: async (id, work) => work(undefined), me: async token => { if (!['A', 'B'].includes(token)) throw new UnauthorizedException(); return { id: token }; } };
   const module = await Test.createTestingModule({ controllers: [ExclusionsController, RestaurantController], providers: [
     { provide: ExclusionsService, useValue: exclusions }, { provide: AuthService, useValue: auth },
     { provide: ConfigService, useValue: config }, { provide: RestaurantService, useValue: restaurants },

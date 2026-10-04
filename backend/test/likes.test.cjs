@@ -22,7 +22,7 @@ test('likes require login, enforce Origin and validation, isolate members and al
   const module = await Test.createTestingModule({ controllers: [LikesController], providers: [
     { provide: LikesService, useValue: new LikesService(model) },
     { provide: ConfigService, useValue: new ConfigService({ FRONTEND_ORIGIN: 'http://localhost:5173' }) },
-    { provide: AuthService, useValue: { me: async token => {
+    { provide: AuthService, useValue: { withMemberWrite: async (id, work) => work(undefined), me: async token => {
       if (!['A', 'B'].includes(token)) throw new UnauthorizedException(); return { id: token };
     } } },
   ] }).compile();

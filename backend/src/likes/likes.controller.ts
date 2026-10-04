@@ -29,7 +29,8 @@ export class LikesController {
   @HttpCode(204)
   @Header('Cache-Control', 'no-store')
   async add(@Req() req: Request, @Body() body: AddLikeDto) {
-    await this.likes.add((await this.user(req, true)).id, body);
+    const user = await this.user(req, true);
+    await this.auth.withMemberWrite(user.id, session => this.likes.add(user.id, body, session));
   }
 
   @Delete(':restaurantId')
