@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectModel } from '@nestjs/mongoose';
+import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { Model } from 'mongoose';
+import { ClientSession, Connection, Model } from 'mongoose';
 import { LoginSession, LoginState, Member } from './auth.schemas';
 import { KakaoAuthService } from './kakao-auth.service';
 
@@ -14,7 +14,17 @@ export class AuthService implements OnModuleInit {
   constructor(private readonly config: ConfigService, private readonly kakao: KakaoAuthService,
     @InjectModel('Member') private readonly members: Model<Member>,
     @InjectModel('LoginSession') private readonly sessions: Model<LoginSession>,
-    @InjectModel('LoginState') private readonly states: Model<LoginState>) {}
+    @InjectModel('LoginState') private readonly states: Model<LoginState>,
+    @InjectConnection() private readonly connection: Connection) {}
+
+  async withMemberWrite<T>(userId: string, work: (session: ClientSession) => Promise<T>): Promise<T> {
+    return this.connection.transaction(async session => {
+      // Serialize member-owned writes with account deletion; no orphan records after withdrawal.
+      const result = await this.members.updateOne({ _id: userId }, { $inc: { writeVersion: 1 } }, { session });
+      if (!result.matchedCount) throw new UnauthorizedException();
+      return work(session);
+    });
+  }
 
   async onModuleInit() {
     // Ensure unique identities and TTL indexes exist before accepting sign-ins.
@@ -50,7 +60,9 @@ export class AuthService implements OnModuleInit {
     await this.logout(previousSession);
     const token = randomBytes(32).toString('hex');
     const maxAge = this.config.getOrThrow<number>('AUTH_SESSION_TTL_SECONDS') * 1000;
-    await this.sessions.create({ tokenHash: hash(token), userId: member._id, expiresAt: new Date(Date.now() + maxAge) });
+    await this.withMemberWrite(member._id.toString(), async session => {
+      await this.sessions.create([{ tokenHash: hash(token), userId: member._id, expiresAt: new Date(Date.now() + maxAge) }], { session });
+    });
     return { token, maxAge };
   }
 

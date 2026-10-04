@@ -22,20 +22,23 @@ function setup() {
   };
   const memberModel = {
     init: async () => {},
+    updateOne: async q => ({ matchedCount: [...members.values()].some(member => member._id === q._id) ? 1 : 0 }),
     findOneAndUpdate: async (query, update) => {
       const member = members.get(query.kakaoId) || { _id: 'internal-user-1', createdAt: new Date() };
       Object.assign(member, update.$set); members.set(query.kakaoId, member); return member;
     },
     findById: async id => [...members.values()].find(member => member._id === id),
   };
-  const sessionModel = { init: async () => {}, create: async item => sessions.set(item.tokenHash, item),
+  const sessionModel = { init: async () => {}, create: async items => {
+    const item = items[0]; sessions.set(item.tokenHash, item);
+  },
     findOne: async query => find(sessions, query), deleteOne: async query => sessions.delete(query.tokenHash) };
   const stateModel = { init: async () => {}, create: async item => states.set(item.tokenHash, item),
     findOneAndDelete: async query => { const item = find(states, query); if (item) states.delete(query.tokenHash); return item; } };
   const settings = config();
   const provider = { authorizeUrl: state => new KakaoAuthService(settings).authorizeUrl(state),
     profile: async () => { calls++; return { kakaoId: '12345', nickname: '테스터' }; } };
-  const auth = new AuthService(settings, provider, memberModel, sessionModel, stateModel);
+  const auth = new AuthService(settings, provider, memberModel, sessionModel, stateModel, { transaction: work => work({}) });
   const login = async previous => { const { state } = await auth.start(); return auth.finish(state, state, 'code', undefined, previous); };
   return { auth, settings, login, members, sessions, states, provider, calls: () => calls };
 }

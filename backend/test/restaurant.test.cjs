@@ -7,6 +7,7 @@ const { getConnectionToken } = require('@nestjs/mongoose');
 const { Module } = require('@nestjs/common');
 const { AuthModule } = require('../dist/auth/auth.module');
 const { LikesModule } = require('../dist/likes/likes.module');
+const { UsersModule } = require('../dist/users/users.module');
 const { AuthService } = require('../dist/auth/auth.service');
 const { ExclusionsModule } = require('../dist/exclusions/exclusions.module');
 const { ExclusionsService } = require('../dist/exclusions/exclusions.service');
@@ -194,6 +195,7 @@ test('HTTP DTO validation rejects malformed location, unknown fields and invalid
   const module = await Test.createTestingModule({ imports: [AppModule] })
     .overrideModule(AuthModule).useModule(NoAuthModule)
     .overrideModule(LikesModule).useModule(NoAuthModule)
+    .overrideModule(UsersModule).useModule(NoAuthModule)
     .overrideModule(ExclusionsModule).useModule(NoExclusionsModule)
     .overrideProvider(getConnectionToken()).useValue({ close: async () => {} }).compile();
   const app = module.createNestApplication({ logger: false });

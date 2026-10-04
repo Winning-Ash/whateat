@@ -11,6 +11,6 @@ import { LoginSessionSchema, LoginStateSchema, MemberSchema } from './auth.schem
     { name: 'LoginSession', schema: LoginSessionSchema },
     { name: 'LoginState', schema: LoginStateSchema },
   ])],
-  controllers: [AuthController], providers: [AuthService, KakaoAuthService], exports: [AuthService],
+  controllers: [AuthController], providers: [AuthService, KakaoAuthService], exports: [AuthService, KakaoAuthService],
 })
 export class AuthModule {}

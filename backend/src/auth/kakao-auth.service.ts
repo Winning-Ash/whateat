@@ -5,6 +5,25 @@ import { ConfigService } from '@nestjs/config';
 export class KakaoAuthService {
   constructor(private readonly config: ConfigService) {}
 
+  async unlink(kakaoId: string): Promise<void> {
+    const key = this.config.get<string>('KAKAO_ADMIN_KEY')?.trim();
+    if (!key) throw new ServiceUnavailableException('Account withdrawal requires KAKAO_ADMIN_KEY');
+    try {
+      const response = await fetch('https://kapi.kakao.com/v1/user/unlink', {
+        method: 'POST',
+        headers: { Authorization: `KakaoAK ${key}`, 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+        body: new URLSearchParams({ target_id_type: 'user_id', target_id: kakaoId }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const body = await response.json() as { id?: number; code?: number };
+      // A retry may encounter an account already unlinked by the preceding attempt.
+      if (response.status === 400 && body.code === -101) return;
+      if (!response.ok || String(body.id) !== kakaoId) throw new Error();
+    } catch {
+      throw new BadGatewayException('Kakao unlink failed. Please retry account withdrawal.');
+    }
+  }
+
   private settings() {
     const key = this.config.get<string>('KAKAO_REST_API_KEY')?.trim();
     const secret = this.config.get<string>('KAKAO_CLIENT_SECRET')?.trim();

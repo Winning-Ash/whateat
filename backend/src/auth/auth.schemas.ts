@@ -4,12 +4,14 @@ export interface Member {
   _id: Types.ObjectId;
   kakaoId: string;
   nickname: string;
+  writeVersion: number;
   createdAt: Date;
   updatedAt: Date;
 }
 export const MemberSchema = new Schema<Member>({
   kakaoId: { type: String, required: true, unique: true },
   nickname: { type: String, required: true, maxlength: 100 },
+  writeVersion: { type: Number, default: 0 },
 }, { timestamps: true, collection: 'users' });
 
 export interface LoginSession { tokenHash: string; userId: Types.ObjectId; expiresAt: Date }

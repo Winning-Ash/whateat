@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { ClientSession, Model } from 'mongoose';
 import { Exclusion } from './exclusions.schema';
 import { AddExclusionDto } from './exclusions.dto';
 
@@ -15,12 +15,13 @@ export class ExclusionsService implements OnModuleInit {
   async ids(userId: string): Promise<string[]> {
     return this.exclusions.distinct('restaurantId', { userId });
   }
-  async add(userId: string, value: AddExclusionDto) {
+  async add(userId: string, value: AddExclusionDto, session?: ClientSession) {
     const filter = { userId, restaurantId: value.restaurantId };
     const update = { $set: { restaurantName: value.restaurantName } };
     try {
-      await this.exclusions.updateOne(filter, update, { upsert: true, runValidators: true });
+      await this.exclusions.updateOne(filter, update, { upsert: true, runValidators: true, session });
     } catch (error) {
+      if (session) throw error;
       if ((error as { code?: number }).code !== 11000) throw error;
       // Simultaneous additions still represent one exclusion for this member.
       await this.exclusions.updateOne(filter, update, { runValidators: true });
