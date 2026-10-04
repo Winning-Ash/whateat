@@ -2,11 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 export abstract class DailyCounter {
   // Must atomically check and reserve BEFORE sending an HTTP request.
-  // Redis adapter: implement with a Lua check/increment/expiry transaction.
   abstract reserve(date: string, limit: number): Promise<boolean>;
 }
 
 @Injectable()
+// Test adapter; production uses MongoDailyCounter.
 export class MemoryDailyCounter extends DailyCounter {
   private date = '';
   private count = 0;

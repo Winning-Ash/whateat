@@ -16,7 +16,7 @@ export class RestaurantService {
 
   async candidates(query: LocationQueryDto) {
     const cell = grid(query, this.config.get<number>('RESTAURANT_GRID_METERS')!);
-    const key = `restaurants:v1:${cell.key}:${query.radius}`;
+    const key = `restaurants:v2:${this.config.get<number>('RESTAURANT_GRID_METERS')}:${cell.key}:${query.radius}`;
     let value = await this.cache.get<CandidateSet>(key);
     let cached = value !== undefined;
     if (!value) {
