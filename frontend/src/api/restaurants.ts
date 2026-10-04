@@ -37,6 +37,9 @@ function createSearchParams(params: RestaurantSearchParams): URLSearchParams {
   if (params.cacheOnly !== undefined) {
     searchParams.set('cacheOnly', String(params.cacheOnly));
   }
+  if (params.excludeIds?.length) {
+    searchParams.set('excludeIds', params.excludeIds.join(','));
+  }
 
   return searchParams;
 }

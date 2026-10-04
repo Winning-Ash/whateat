@@ -19,9 +19,14 @@ export function configureApi(baseUrl: string): void {
   apiBaseUrl = baseUrl.replace(/\/$/, '');
 }
 
+export function getApiUrl(path: string): string {
+  return `${apiBaseUrl}${path}`;
+}
+
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
+  const response = await fetch(getApiUrl(path), {
     ...init,
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       ...init?.headers,

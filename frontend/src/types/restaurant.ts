@@ -30,6 +30,7 @@ export interface RestaurantSearchParams {
   radius: number;
   category?: FoodCategory;
   cacheOnly?: boolean;
+  excludeIds?: string[];
 }
 
 export interface CategoriesResponse {

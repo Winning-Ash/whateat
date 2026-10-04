@@ -166,10 +166,10 @@ export default function KakaoMap({
       center: position,
       radius: nextRadius,
       strokeWeight: 3,
-      strokeColor: '#e03131',
+      strokeColor: '#18b15c',
       strokeOpacity: 1,
       strokeStyle: 'solid',
-      fillColor: '#ff6b6b',
+      fillColor: '#5cff9e',
       fillOpacity: 0.2,
       zIndex: 5,
     });
