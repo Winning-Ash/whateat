@@ -7,6 +7,7 @@
   },
   "scripts": {
     "db:check": "npm run build && node scripts/check-database.cjs",
+    "cache:check": "npm run build && node scripts/check-cache.cjs",
     "auth:check": "npm run build && node scripts/check-auth.cjs",
     "exclusions:check": "npm run build && node scripts/check-exclusions.cjs",
     "likes:check": "npm run build && node scripts/check-likes.cjs",

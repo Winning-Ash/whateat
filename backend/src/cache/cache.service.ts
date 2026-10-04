@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-// Async contract allows a Redis GET / SET EX adapter without changing callers.
+// Production uses MongoDB; memory implementation is retained for isolated tests.
 export abstract class CandidateCache {
   abstract get<T>(key: string): Promise<T | undefined>;
   abstract set<T>(key: string, value: T, ttlSeconds: number): Promise<void>;

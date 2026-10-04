@@ -21,6 +21,13 @@ const { AppModule } = require('../dist/app.module');
 const { createValidationPipe } = require('../dist/common/validation');
 const { validateEnv } = require('../dist/config/env.validation');
 const { MemoryCacheService } = require('../dist/cache/cache.service');
+const { CacheModule } = require('../dist/cache/cache.module');
+const { CandidateCache } = require('../dist/cache/cache.service');
+const { DailyCounter } = require('../dist/cache/daily-counter.service');
+class TestCacheModule {}
+Module({ providers: [{ provide: CandidateCache, useClass: MemoryCacheService },
+  { provide: DailyCounter, useClass: require('../dist/cache/daily-counter.service').MemoryDailyCounter }],
+  exports: [CandidateCache, DailyCounter] })(TestCacheModule);
 const { MemoryDailyCounter } = require('../dist/cache/daily-counter.service');
 const { RestaurantService } = require('../dist/restaurant/restaurant.service');
 const { KakaoService, DailyLimitException } = require('../dist/kakao/kakao.service');
@@ -194,6 +201,7 @@ test('Haversine uses meters and environment rejects dangerous configuration', ()
 test('HTTP DTO validation rejects malformed location, unknown fields and invalid radius', async () => {
   const module = await Test.createTestingModule({ imports: [AppModule] })
     .overrideModule(AuthModule).useModule(NoAuthModule)
+    .overrideModule(CacheModule).useModule(TestCacheModule)
     .overrideModule(LikesModule).useModule(NoAuthModule)
     .overrideModule(UsersModule).useModule(NoAuthModule)
     .overrideModule(ExclusionsModule).useModule(NoExclusionsModule)
