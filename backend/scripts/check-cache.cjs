@@ -8,6 +8,7 @@ const { ConfigModule, ConfigService } = require('@nestjs/config');
 const { validateEnv } = require('../dist/config/env.validation');
 const { DatabaseModule } = require('../dist/database/database.module');
 const { MongoCacheService, CandidateCacheSchema } = require('../dist/cache/mongo-cache.service');
+const { MongoDailyCounter, DailyUsageSchema } = require('../dist/cache/mongo-daily-counter.service');
 class CacheCheckModule {}
 Module({ imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }), DatabaseModule] })(CacheCheckModule);
 
@@ -37,7 +38,23 @@ Module({ imports: [ConfigModule.forRoot({ isGlobal: true, validate: validateEnv 
     assert.equal(await model.countDocuments(), 2);
     await Promise.all([writer.set('same', ['4'], 3600), reader.set('same', ['4'], 3600)]);
     assert.deepEqual(await reader.get('same'), ['4']);
+    // Reuse only this isolated test collection; never touch production counters.
+    const usage = connection.model('DailyUsageCheck', DailyUsageSchema, collection);
+    const counters = [new MongoDailyCounter(usage), new MongoDailyCounter(usage)];
+    await counters[0].onModuleInit();
+    const accepted = await Promise.all(Array.from({ length: 100 }, (_, i) =>
+      counters[i % 2].reserve('2026-10-04', 7)));
+    assert.equal(accepted.filter(Boolean).length, 7);
+    assert.equal((await usage.findById('2026-10-04').lean()).count, 7);
+    assert.equal(await new MongoDailyCounter(usage).reserve('2026-10-04', 7), false);
+    assert.equal(await counters[0].reserve('2026-10-05', 7), true);
+    assert.equal(await counters[0].reserve('2026-10-04', 7), false);
+    assert.equal(await counters[0].reserve('2026-10-05', 0), false);
+    assert.equal(await counters[0].reserve('2026-10-04', 8), true);
+    assert.equal(await counters[1].reserve('2026-10-04', 8), false);
+    assert.equal(await counters[1].reserve('2026-10-04', 2), false);
     console.log('MongoDB cache check passed: shared reads, expiration, empty results, capacity, concurrent writes and TTL index.');
+    console.log('MongoDB daily counter check passed: 100 concurrent reservations across two instances accepted exactly 7, retained usage, date isolation and changed limits.');
   } catch {
     console.error('MongoDB cache check failed. Check database connectivity and cache implementation.');
     process.exitCode = 1;
