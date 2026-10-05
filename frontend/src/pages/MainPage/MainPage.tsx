@@ -385,8 +385,20 @@ export default function MainPage() {
     }
   }
 
+  function blockInteractionDuringRecommendation(event: React.SyntheticEvent) {
+    if (!recommending) return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
   return (
-    <main className={styles.page}>
+    <main
+      className={styles.page}
+      aria-busy={recommending}
+      onClickCapture={blockInteractionDuringRecommendation}
+      onKeyDownCapture={blockInteractionDuringRecommendation}
+      onPointerDownCapture={blockInteractionDuringRecommendation}
+    >
       <KakaoMap
         selectedLocation={selectedLocation}
         radius={radius}
@@ -530,6 +542,12 @@ export default function MainPage() {
         >
           {recommending ? '탐색 중...' : '룰렛'}
         </button>
+      )}
+
+      {recommending && (
+        <div className={styles.interactionLock} role="status" aria-live="polite">
+          <span className={styles.visuallyHidden}>추천 결과를 찾는 중입니다.</span>
+        </div>
       )}
 
       {sheetPosition !== 'closed' && (

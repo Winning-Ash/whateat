@@ -200,6 +200,8 @@ export default function KakaoMap({
         map = new maps.Map(mapContainer, {
           center: new maps.LatLng(initialLocation.lat, initialLocation.lng),
           level: 4,
+          draggable: !isSearchingRef.current,
+          scrollwheel: !isSearchingRef.current,
         });
 
         mapsRef.current = maps;
@@ -298,6 +300,9 @@ export default function KakaoMap({
   useEffect(() => {
     const maps = mapsRef.current;
     const map = mapRef.current;
+
+    map?.setDraggable(!isSearching);
+    map?.setZoomable(!isSearching);
 
     if (!isSearching || !selectedLocation || !maps || !map) {
       radarOverlayRef.current?.setMap(null);

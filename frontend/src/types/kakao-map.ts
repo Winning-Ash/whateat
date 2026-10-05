@@ -6,6 +6,8 @@ export interface KakaoLatLng {
 export interface KakaoMapInstance {
   relayout(): void;
   setCenter(position: KakaoLatLng): void;
+  setDraggable(draggable: boolean): void;
+  setZoomable(zoomable: boolean): void;
   getProjection(): KakaoMapProjection;
 }
 
@@ -44,7 +46,12 @@ export interface KakaoMapsApi {
   LatLng: new (lat: number, lng: number) => KakaoLatLng;
   Map: new (
     container: HTMLElement,
-    options: { center: KakaoLatLng; level: number },
+    options: {
+      center: KakaoLatLng;
+      level: number;
+      draggable?: boolean;
+      scrollwheel?: boolean;
+    },
   ) => KakaoMapInstance;
   Marker: new (options: {
     map?: KakaoMapInstance;

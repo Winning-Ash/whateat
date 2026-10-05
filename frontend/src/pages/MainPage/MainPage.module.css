@@ -187,6 +187,26 @@
   opacity: 0.65;
 }
 
+.interactionLock {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  cursor: wait;
+  touch-action: none;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip-path: inset(50%);
+}
+
 .notice {
   position: absolute;
   right: 16px;
