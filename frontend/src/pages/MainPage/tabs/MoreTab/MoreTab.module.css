@@ -1,0 +1,160 @@
+.loginSection,
+.accountSection {
+  width: min(100%, 480px);
+  margin: 0 auto;
+  padding: 20px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+}
+
+.loginHeading {
+  text-align: center;
+}
+
+.loginHeading h2 {
+  margin: 0 0 5px;
+  font-size: 19px;
+}
+
+.kakaoLoginButton {
+  display: block;
+  width: 224px;
+  height: 46px;
+  margin: 22px auto 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.kakaoLoginButton img {
+  display: block;
+  width: 224px;
+  height: 46px;
+}
+
+.kakaoLoginButton:active {
+  transform: scale(0.98);
+}
+
+.statusMessage {
+  margin: 24px 0;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  text-align: center;
+}
+
+.accountSection {
+  padding: 16px;
+}
+
+.accountSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.accountSection h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 22px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountSection p {
+  margin: 8px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.accountActions {
+  display: grid;
+  flex: none;
+  justify-items: end;
+  gap: 4px;
+}
+
+.logoutButton {
+  flex: none;
+  min-height: 34px;
+  padding: 0 11px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.logoutButton:disabled {
+  opacity: 0.6;
+}
+
+.accountManagementButton {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  padding: 0 4px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.accountManagementButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.loginSection .errorMessage,
+.accountSection .errorMessage {
+  margin-top: 14px;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.themeSettings {
+  margin-top: 24px;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.themeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 0;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.themeToggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.themeToggle:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: -2px;
+}
+

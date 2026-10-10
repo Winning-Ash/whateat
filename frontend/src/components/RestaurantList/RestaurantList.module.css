@@ -1,0 +1,166 @@
+.listContainer {
+  display: grid;
+  gap: 18px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+}
+
+.statusMessage {
+  width: min(100%, 480px);
+  margin: 24px auto;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  text-align: center;
+}
+
+.listSection {
+  padding: 18px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+}
+
+.listHeader {
+  margin: 0;
+}
+
+.listDescription {
+  margin: 7px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.listToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  color: var(--color-text);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.listTitle {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.listCount {
+  min-width: 26px;
+  padding: 3px 8px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  background: var(--color-surface-hover);
+  border-radius: 999px;
+}
+
+.listChevron {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--color-text-subtle);
+  transform: rotate(-90deg);
+  transition: transform 180ms ease;
+}
+
+.listChevronExpanded {
+  transform: rotate(0);
+}
+
+.listContent {
+  margin-top: 14px;
+}
+
+.emptyMessage {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.restaurantList {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.restaurantList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 10px 10px 14px;
+  background: var(--color-surface);
+  border-radius: 12px;
+}
+
+.restaurantList strong,
+.restaurantList time {
+  display: block;
+}
+
+.restaurantLink {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.restaurantLink:hover strong,
+.restaurantLink:focus-visible strong {
+  text-decoration: underline;
+}
+
+.restaurantList strong {
+  font-size: 14px;
+}
+
+.restaurantList time {
+  margin-top: 4px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+.restaurantList button {
+  display: grid;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--color-list-delete);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  place-items: center;
+}
+
+.restaurantList button:active {
+  background: var(--color-list-delete-soft);
+}
+
+.restaurantList button:disabled {
+  opacity: 0.45;
+}
+
+.restaurantList svg {
+  width: 19px;
+  height: 19px;
+}
+
+.errorMessage {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 13px;
+  text-align: center;
+}
