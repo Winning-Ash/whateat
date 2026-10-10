@@ -5,6 +5,7 @@ export interface KakaoLatLng {
 
 export interface KakaoMapInstance {
   relayout(): void;
+  getCenter(): KakaoLatLng;
   setCenter(position: KakaoLatLng): void;
   setDraggable(draggable: boolean): void;
   setZoomable(zoomable: boolean): void;
@@ -30,6 +31,7 @@ export interface KakaoMapMouseEvent {
 }
 
 export interface KakaoCircleInstance {
+  setOptions(options: { strokeColor?: string; fillColor?: string }): void;
   setMap(map: KakaoMapInstance | null): void;
   setPosition(position: KakaoLatLng): void;
   setRadius(radius: number): void;
@@ -39,6 +41,32 @@ export interface KakaoCircleInstance {
 export interface KakaoCustomOverlayInstance {
   setMap(map: KakaoMapInstance | null): void;
   setPosition(position: KakaoLatLng): void;
+}
+
+export interface KakaoPlaceSearchResult {
+  id: string;
+  place_name: string;
+  category_name: string;
+  address_name: string;
+  road_address_name: string;
+  place_url: string;
+  x: string;
+  y: string;
+}
+
+export interface KakaoPlacesInstance {
+  keywordSearch(
+    keyword: string,
+    callback: (
+      results: KakaoPlaceSearchResult[],
+      status: 'OK' | 'ZERO_RESULT' | 'ERROR',
+    ) => void,
+    options?: {
+      category_group_code?: string;
+      location?: KakaoLatLng;
+      size?: number;
+    },
+  ): void;
 }
 
 export interface KakaoMapsApi {
@@ -77,6 +105,14 @@ export interface KakaoMapsApi {
     fillOpacity: number;
     zIndex?: number;
   }) => KakaoCircleInstance;
+  services: {
+    Places: new () => KakaoPlacesInstance;
+    Status: {
+      OK: 'OK';
+      ZERO_RESULT: 'ZERO_RESULT';
+      ERROR: 'ERROR';
+    };
+  };
   event: {
     addListener(
       target: KakaoMapInstance,

@@ -1,0 +1,90 @@
+.settings {
+  width: 100%;
+  color: var(--color-text);
+}
+
+.colorSection {
+  min-width: 0;
+  margin: 0 0 32px;
+  padding: 16px 0 24px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.colorSection legend {
+  padding: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.options {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  font-weight: 700;
+  background: var(--color-surface-muted);
+}
+
+.option input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-text);
+}
+
+.swatch {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+}
+
+.colorPicker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pinPreview {
+  position: relative;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+}
+
+.pinPreview::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}

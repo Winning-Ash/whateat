@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { Search, X } from 'lucide-react';
 import { loadKakaoMapSdk } from '../../api';
+import { type ThemeId } from '../../styles/theme';
 import {
   KakaoCircleInstance,
   KakaoCustomOverlayInstance,
@@ -7,6 +9,7 @@ import {
   KakaoMapMouseEvent,
   KakaoMapsApi,
   KakaoMarkerInstance,
+  KakaoPlaceSearchResult,
   Restaurant,
 } from '../../types';
 import styles from './KakaoMap.module.css';
@@ -17,23 +20,29 @@ export interface MapLocation {
 }
 
 interface KakaoMapProps {
+  theme: ThemeId;
   selectedLocation?: MapLocation;
   radius: number;
   locationFocusKey: number;
   recommendation?: Restaurant;
   isSearching: boolean;
+  onCloseRecommendation(): void;
   onSelectLocation(location: MapLocation): void;
+  onSelectRestaurant(restaurant: Restaurant): void;
 }
 
 const DEFAULT_LOCATION = { lat: 37.5665, lng: 126.978 };
 
 export default function KakaoMap({
+  theme,
   selectedLocation,
   radius,
   locationFocusKey,
   recommendation,
   isSearching,
+  onCloseRecommendation,
   onSelectLocation,
+  onSelectRestaurant,
 }: KakaoMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<KakaoMapInstance | null>(null);
@@ -49,6 +58,10 @@ export default function KakaoMap({
   const radiusRef = useRef(radius);
   const isSearchingRef = useRef(isSearching);
   const [errorMessage, setErrorMessage] = useState<string>();
+  const [mapQuery, setMapQuery] = useState('');
+  const [mapSearchResults, setMapSearchResults] = useState<KakaoPlaceSearchResult[]>([]);
+  const [mapSearchMessage, setMapSearchMessage] = useState<string>();
+  const [mapSearchLoading, setMapSearchLoading] = useState(false);
   selectedLocationRef.current = selectedLocation;
   recommendationRef.current = recommendation;
   radiusRef.current = radius;
@@ -155,9 +168,17 @@ export default function KakaoMap({
     if (markerRef.current) markerRef.current.setPosition(position);
     else markerRef.current = new maps.Marker({ map, position });
 
+    const selectionColor = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-accent')
+      .trim();
+
     if (circleRef.current) {
       circleRef.current.setPosition(position);
       circleRef.current.setRadius(nextRadius);
+      circleRef.current.setOptions({
+        strokeColor: selectionColor,
+        fillColor: selectionColor,
+      });
       return;
     }
 
@@ -166,11 +187,11 @@ export default function KakaoMap({
       center: position,
       radius: nextRadius,
       strokeWeight: 3,
-      strokeColor: '#18b15c',
+      strokeColor: selectionColor,
       strokeOpacity: 1,
       strokeStyle: 'solid',
-      fillColor: '#5cff9e',
-      fillOpacity: 0.2,
+      fillColor: selectionColor,
+      fillOpacity: 0.12,
       zIndex: 5,
     });
     circleRef.current.setMap(map);
@@ -179,6 +200,63 @@ export default function KakaoMap({
 
   function createPosition(maps: KakaoMapsApi, location: MapLocation) {
     return new maps.LatLng(location.lat, location.lng);
+  }
+
+  function searchMap(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const keyword = mapQuery.trim();
+    const maps = mapsRef.current;
+    const map = mapRef.current;
+
+    if (!keyword || !maps || !map) return;
+
+    setMapSearchLoading(true);
+    setMapSearchMessage(undefined);
+
+    const places = new maps.services.Places();
+    places.keywordSearch(keyword, (results, status) => {
+      setMapSearchLoading(false);
+
+      if (status === maps.services.Status.OK) {
+        setMapSearchResults(results);
+        return;
+      }
+
+      setMapSearchResults([]);
+      setMapSearchMessage(status === maps.services.Status.ZERO_RESULT
+        ? '검색 결과가 없습니다.'
+        : '장소를 검색하지 못했습니다.');
+    }, {
+      category_group_code: 'FD6',
+      location: map.getCenter(),
+      size: 15,
+    });
+  }
+
+  function selectSearchResult(result: KakaoPlaceSearchResult) {
+    const maps = mapsRef.current;
+    const map = mapRef.current;
+    const location = { lat: Number(result.y), lng: Number(result.x) };
+    if (!maps || !map || !Number.isFinite(location.lat) || !Number.isFinite(location.lng)) {
+      setMapSearchMessage('검색한 장소의 위치를 확인할 수 없습니다.');
+      return;
+    }
+
+    const position = createPosition(maps, location);
+    map.setCenter(position);
+    onSelectRestaurant({
+      id: result.id,
+      name: result.place_name,
+      address: result.address_name,
+      roadAddress: result.road_address_name,
+      lat: location.lat,
+      lng: location.lng,
+      category: result.category_name,
+      placeUrl: result.place_url,
+    });
+    setMapQuery(result.place_name || result.address_name);
+    setMapSearchResults([]);
+    setMapSearchMessage(undefined);
   }
 
   useEffect(() => {
@@ -229,6 +307,10 @@ export default function KakaoMap({
 
         clickHandler = (event) => {
           if (isSearchingRef.current) return;
+          if (recommendationRef.current) {
+            onCloseRecommendation();
+            return;
+          }
           updateSelectionOverlay(maps!, map!, event.latLng, radiusRef.current);
           onSelectLocation({
             lat: event.latLng.getLat(),
@@ -282,7 +364,7 @@ export default function KakaoMap({
       mapRef.current = null;
       mapsRef.current = null;
     };
-  }, [onSelectLocation]);
+  }, [onCloseRecommendation, onSelectLocation]);
 
   useEffect(() => {
     const maps = mapsRef.current;
@@ -295,7 +377,7 @@ export default function KakaoMap({
       createPosition(maps, selectedLocation),
       radius,
     );
-  }, [radius, selectedLocation]);
+  }, [radius, selectedLocation, theme]);
 
   useEffect(() => {
     const maps = mapsRef.current;
@@ -335,6 +417,61 @@ export default function KakaoMap({
   return (
     <section className={styles.map} aria-label="위치 선택 지도">
       <div ref={containerRef} className={styles.canvas} />
+      <div className={styles.mapSearch}>
+        <form className={styles.mapSearchForm} role="search" onSubmit={searchMap}>
+          <Search aria-hidden="true" />
+          <input
+            type="text"
+            value={mapQuery}
+            placeholder="장소 또는 주소 검색"
+            aria-label="지도 장소 검색"
+            disabled={isSearching}
+            onChange={(event) => {
+              setMapQuery(event.target.value);
+              if (!event.target.value) {
+                setMapSearchResults([]);
+                setMapSearchMessage(undefined);
+              }
+            }}
+          />
+          {mapQuery && (
+            <button
+              className={styles.mapSearchClear}
+              type="button"
+              aria-label="지도 검색어 지우기"
+              onClick={() => {
+                setMapQuery('');
+                setMapSearchResults([]);
+                setMapSearchMessage(undefined);
+              }}
+            >
+              <X aria-hidden="true" />
+            </button>
+          )}
+          <button
+            className={styles.mapSearchSubmit}
+            type="submit"
+            disabled={isSearching || mapSearchLoading || !mapQuery.trim()}
+          >
+            {mapSearchLoading ? '검색 중' : '검색'}
+          </button>
+        </form>
+        {mapSearchResults.length > 0 && (
+          <ul className={styles.mapSearchResults}>
+            {mapSearchResults.map((result) => (
+              <li key={`${result.id}:${result.x}:${result.y}`}>
+                <button type="button" onClick={() => selectSearchResult(result)}>
+                  <strong>{result.place_name || result.address_name}</strong>
+                  <span>{result.road_address_name || result.address_name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {mapSearchMessage && (
+          <p className={styles.mapSearchMessage} role="status">{mapSearchMessage}</p>
+        )}
+      </div>
       {errorMessage && (
         <p className={styles.error} role="alert">{errorMessage}</p>
       )}

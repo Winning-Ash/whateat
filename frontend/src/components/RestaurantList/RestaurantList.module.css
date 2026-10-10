@@ -1,4 +1,4 @@
-.bookmarkTab {
+.listContainer {
   display: grid;
   gap: 18px;
   width: min(100%, 560px);
@@ -8,47 +8,80 @@
 .statusMessage {
   width: min(100%, 480px);
   margin: 24px auto;
-  text-align: center;
-}
-
-.statusMessage,
-.emptyMessage {
   color: var(--color-text-subtle);
   font-size: 14px;
-}
-
-.emptyMessage {
-  margin: 0;
-  line-height: 1.5;
+  text-align: center;
 }
 
 .listSection {
   padding: 18px;
   background: var(--color-surface-muted);
-  border: 1px solid rgb(0 0 0 / 6%);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
 }
 
-.listHeading {
+.listHeader {
+  margin: 0;
+}
+
+.listDescription {
+  margin: 7px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.listToggle {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  color: var(--color-text);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
-.listHeading h2 {
-  margin: 0;
-  font-size: 17px;
+.listTitle {
+  font-size: 15px;
+  font-weight: 700;
 }
 
-.listHeading span {
-  min-width: 28px;
+.listCount {
+  min-width: 26px;
   padding: 3px 8px;
+  color: var(--color-text-subtle);
   font-size: 12px;
   font-weight: 700;
   text-align: center;
-  background: var(--color-primary);
+  background: var(--color-surface-hover);
   border-radius: 999px;
+}
+
+.listChevron {
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  color: var(--color-text-subtle);
+  transform: rotate(-90deg);
+  transition: transform 180ms ease;
+}
+
+.listChevronExpanded {
+  transform: rotate(0);
+}
+
+.listContent {
+  margin-top: 14px;
+}
+
+.emptyMessage {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .restaurantList {
@@ -104,7 +137,7 @@
   width: 40px;
   height: 40px;
   padding: 0;
-  color: #c92a2a;
+  color: var(--color-list-delete);
   background: transparent;
   border: 0;
   border-radius: 10px;
@@ -113,11 +146,10 @@
 }
 
 .restaurantList button:active {
-  background: #fff0f0;
+  background: var(--color-list-delete-soft);
 }
 
 .restaurantList button:disabled {
-  cursor: wait;
   opacity: 0.45;
 }
 
@@ -128,7 +160,7 @@
 
 .errorMessage {
   margin: 0;
-  color: #c92a2a;
+  color: var(--color-danger);
   font-size: 13px;
   text-align: center;
 }

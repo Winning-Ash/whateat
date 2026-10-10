@@ -22,7 +22,7 @@ export function loadKakaoMapSdk(): Promise<KakaoMapsApi> {
     const script = document.createElement('script');
     script.id = SCRIPT_ID;
     script.async = true;
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false`;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(appKey)}&autoload=false&libraries=services`;
     script.onload = () => {
       if (!window.kakao?.maps) {
         reject(new Error('Kakao Map SDK was not initialized.'));

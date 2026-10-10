@@ -4,7 +4,7 @@
   margin: 0 auto;
   padding: 20px;
   background: var(--color-surface-muted);
-  border: 1px solid rgb(0 0 0 / 6%);
+  border: 1px solid var(--color-border);
   border-radius: 18px;
 }
 
@@ -46,23 +46,25 @@
 }
 
 .accountSection {
-  text-align: center;
+  padding: 16px;
 }
 
-.loginStatus {
-  display: inline-block;
-  margin-bottom: 10px;
-  padding: 4px 9px;
-  color: var(--color-on-primary);
-  font-size: 12px;
-  font-weight: 700;
-  background: var(--color-primary);
-  border-radius: 999px;
+.accountSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .accountSection h2 {
+  flex: 1;
+  min-width: 0;
   margin: 0;
-  font-size: 20px;
+  overflow: hidden;
+  font-size: 22px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .accountSection p {
@@ -74,85 +76,85 @@
 
 .accountActions {
   display: grid;
-  gap: 8px;
-  margin-top: 22px;
+  flex: none;
+  justify-items: end;
+  gap: 4px;
 }
 
-.logoutButton,
-.withdrawButton {
-  width: 100%;
-  min-height: 44px;
+.logoutButton {
+  flex: none;
+  min-height: 34px;
+  padding: 0 11px;
   color: var(--color-text);
+  font-size: 12px;
   font-weight: 700;
   background: var(--color-surface);
-  border: 1px solid rgb(0 0 0 / 14%);
-  border-radius: 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 8px;
   cursor: pointer;
 }
 
-.withdrawButton {
-  color: #c92a2a;
-  background: transparent;
-  border-color: rgb(201 42 42 / 28%);
-}
-
-.logoutButton:disabled,
-.withdrawButton:disabled {
-  cursor: wait;
+.logoutButton:disabled {
   opacity: 0.6;
 }
 
-.withdrawConfirmation {
-  margin-top: 16px;
-  padding: 16px;
-  text-align: left;
-  background: #fff5f5;
-  border: 1px solid rgb(201 42 42 / 22%);
-  border-radius: 12px;
-}
-
-.withdrawConfirmation h3 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.accountSection .withdrawConfirmation p {
-  margin-top: 7px;
-  color: #7d2b2b;
-  font-size: 13px;
-}
-
-.withdrawConfirmation div {
+.accountManagementButton {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.withdrawConfirmation button {
-  min-height: 38px;
-  padding: 0 12px;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  padding: 0 4px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
   font-weight: 700;
-  background: var(--color-surface);
-  border: 1px solid rgb(0 0 0 / 12%);
-  border-radius: 9px;
+  background: transparent;
+  border: 0;
   cursor: pointer;
 }
 
-.withdrawConfirmation button:last-child {
-  color: #fff;
-  background: #c92a2a;
-  border-color: #c92a2a;
-}
-
-.withdrawConfirmation button:disabled {
-  cursor: wait;
-  opacity: 0.6;
+.accountManagementButton svg {
+  width: 14px;
+  height: 14px;
 }
 
 .loginSection .errorMessage,
 .accountSection .errorMessage {
   margin-top: 14px;
-  color: #c92a2a;
+  color: var(--color-danger);
   font-size: 13px;
 }
+
+.themeSettings {
+  margin-top: 24px;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.themeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 0;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.themeToggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.themeToggle:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: -2px;
+}
+
