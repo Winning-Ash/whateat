@@ -41,7 +41,7 @@ export default function LikedRestaurantRandomizer({
       <div className={styles.heading}>
         <div>
           <h3 id="liked-random-title">좋아요 랜덤</h3>
-          <p>좋아요로 저장한 가게 중 한 곳을 골라드려요.</p>
+          <p>좋아요로 저장한 가게 중 한 곳을 뽑습니다.</p>
         </div>
         <button
           type="button"

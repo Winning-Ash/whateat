@@ -37,9 +37,9 @@
 .mapSearch {
   position: absolute;
   top: max(16px, env(safe-area-inset-top));
-  left: 72px;
+  left: 16px;
   z-index: 15;
-  width: min(420px, calc(100% - 88px));
+  width: min(476px, calc(100% - 32px));
 }
 
 .mapSearchForm {

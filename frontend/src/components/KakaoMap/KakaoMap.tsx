@@ -32,6 +32,7 @@ interface KakaoMapProps {
 }
 
 const DEFAULT_LOCATION = { lat: 37.5665, lng: 126.978 };
+const MAP_SEARCH_COOLDOWN_MS = 1000;
 
 export default function KakaoMap({
   theme,
@@ -57,6 +58,12 @@ export default function KakaoMap({
   const recommendationRef = useRef(recommendation);
   const radiusRef = useRef(radius);
   const isSearchingRef = useRef(isSearching);
+  const lastMapSearchRef = useRef<{
+    keyword: string;
+    lat: number;
+    lng: number;
+    requestedAt: number;
+  } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>();
   const [mapQuery, setMapQuery] = useState('');
   const [mapSearchResults, setMapSearchResults] = useState<KakaoPlaceSearchResult[]>([]);
@@ -210,6 +217,21 @@ export default function KakaoMap({
 
     if (!keyword || !maps || !map) return;
 
+    const center = map.getCenter();
+    const request = {
+      keyword,
+      lat: center.getLat(),
+      lng: center.getLng(),
+      requestedAt: performance.now(),
+    };
+    const lastSearch = lastMapSearchRef.current;
+    if (lastSearch
+      && lastSearch.keyword === request.keyword
+      && lastSearch.lat === request.lat
+      && lastSearch.lng === request.lng
+      && request.requestedAt - lastSearch.requestedAt < MAP_SEARCH_COOLDOWN_MS) return;
+
+    lastMapSearchRef.current = request;
     setMapSearchLoading(true);
     setMapSearchMessage(undefined);
 
@@ -222,13 +244,17 @@ export default function KakaoMap({
         return;
       }
 
+      if (status === maps.services.Status.ERROR && lastMapSearchRef.current === request) {
+        lastMapSearchRef.current = null;
+      }
+
       setMapSearchResults([]);
       setMapSearchMessage(status === maps.services.Status.ZERO_RESULT
         ? '검색 결과가 없습니다.'
         : '장소를 검색하지 못했습니다.');
     }, {
       category_group_code: 'FD6',
-      location: map.getCenter(),
+      location: center,
       size: 15,
     });
   }
@@ -418,7 +444,14 @@ export default function KakaoMap({
     <section className={styles.map} aria-label="위치 선택 지도">
       <div ref={containerRef} className={styles.canvas} />
       <div className={styles.mapSearch}>
-        <form className={styles.mapSearchForm} role="search" onSubmit={searchMap}>
+        <form
+          className={styles.mapSearchForm}
+          role="search"
+          onSubmit={searchMap}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && event.repeat) event.preventDefault();
+          }}
+        >
           <Search aria-hidden="true" />
           <input
             type="text"

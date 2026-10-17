@@ -9,6 +9,7 @@ import {
   LoaderCircle,
   MapPin,
   Menu,
+  Settings,
   ThumbsDown,
   ThumbsUp,
   X,
@@ -46,6 +47,7 @@ import {
 } from '../../types';
 import AccountManagement from './tabs/MoreTab/AccountManagement/AccountManagement';
 import MoreTab from './tabs/MoreTab/MoreTab';
+import Policies from './tabs/MoreTab/Policies/Policies';
 import ThemeSettings from './tabs/MoreTab/ThemeSettings/ThemeSettings';
 import SavedListTab from './tabs/SavedListTab/SavedListTab';
 import TodayRecordTab, {
@@ -66,6 +68,16 @@ const NAVIGATION_ITEMS = [
 const RADAR_ROTATION_MS = 1600;
 const MAX_SAVED_LIKES = 100;
 const MAX_ROULETTE_LOGS = 20;
+const MORE_PAGE_TITLES = {
+  main: '더 보기',
+  account: '계정관리',
+  theme: '테마 설정',
+  policies: '약관 및 정책',
+  terms: '이용 약관',
+  privacy: '개인 정보 처리 방침',
+} as const;
+
+type MorePage = keyof typeof MORE_PAGE_TITLES;
 
 function waitForRadarRotation() {
   return new Promise<void>((resolve) => {
@@ -81,6 +93,25 @@ function formatRestaurantCategory(value: string): string {
   return categories.find((category) => category !== '음식점') ?? '기타';
 }
 
+function formatRestaurantDistance(center: MapLocation, restaurant: MapLocation): string | undefined {
+  if (![center.lat, center.lng, restaurant.lat, restaurant.lng].every(Number.isFinite)) {
+    return undefined;
+  }
+
+  const radians = Math.PI / 180;
+  const latitudeDifference = (restaurant.lat - center.lat) * radians;
+  const longitudeDifference = (restaurant.lng - center.lng) * radians;
+  const haversine = Math.sin(latitudeDifference / 2) ** 2
+    + Math.cos(center.lat * radians) * Math.cos(restaurant.lat * radians)
+    * Math.sin(longitudeDifference / 2) ** 2;
+  const distanceMeters = 6_371_000 * 2 * Math.asin(Math.sqrt(Math.min(1, haversine)));
+  const roundedMeters = Math.round(distanceMeters);
+
+  return roundedMeters >= 1000
+    ? `${(distanceMeters / 1000).toFixed(1)}km`
+    : `${roundedMeters}m`;
+}
+
 interface MainPageProps {
   theme: ThemeId;
   pinColor: PinColorId;
@@ -89,8 +120,7 @@ interface MainPageProps {
 }
 
 export default function MainPage({ theme, pinColor, onThemeChange, onPinColorChange }: MainPageProps) {
-  const [accountManagementOpen, setAccountManagementOpen] = useState(false);
-  const [themeSettingsOpen, setThemeSettingsOpen] = useState(false);
+  const [morePage, setMorePage] = useState<MorePage>('main');
   const [selectedLocation, setSelectedLocation] = useState<MapLocation>();
   const [permissionDialog, setPermissionDialog] = useState<PermissionDialog>();
   const [locating, setLocating] = useState(false);
@@ -118,6 +148,7 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   const [authChecking, setAuthChecking] = useState(true);
   const [activeItem, setActiveItem] = useState<NavigationItem>('home');
   const [panelOpen, setPanelOpen] = useState(false);
+  const navigationToggleRef = useRef<HTMLButtonElement>(null);
 
   const selectLocation = useCallback((location: MapLocation) => {
     setSelectedLocation(location);
@@ -256,14 +287,18 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   }, [temporaryExclusions]);
 
   function selectNavigationItem(item: NavigationItem) {
-    setAccountManagementOpen(false);
-    setThemeSettingsOpen(false);
-    if (activeItem === item && panelOpen) {
-      setPanelOpen(false);
-      return;
-    }
-
+    setMorePage('main');
     setActiveItem(item);
+    setPanelOpen(true);
+  }
+
+  function closeNavigationMenu() {
+    setPanelOpen(false);
+    window.requestAnimationFrame(() => navigationToggleRef.current?.focus());
+  }
+
+  function openNavigationMenu() {
+    setFilterOpen(false);
     setPanelOpen(true);
   }
 
@@ -321,6 +356,9 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
     }
   }
 
+  const recommendationDistance = selectedLocation && recommendation
+    ? formatRestaurantDistance(selectedLocation, recommendation)
+    : undefined;
   const savedLists = {
     like: recommendation
       ? likes.some((item) => item.restaurantId === recommendation.id)
@@ -473,7 +511,7 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
 
   function handleWithdrawn() {
     clearLocalRestaurantLists();
-    setAccountManagementOpen(false);
+    setMorePage('main');
     setUser(undefined);
     setLikes([]);
     setExclusions([]);
@@ -487,10 +525,9 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
     event.stopPropagation();
   }
 
-  const panelTitle = activeItem === 'more' && accountManagementOpen
-    ? '계정관리'
-    : activeItem === 'more' && themeSettingsOpen
-      ? '테마 설정'
+  const policyDocumentOpen = morePage === 'terms' || morePage === 'privacy';
+  const panelTitle = activeItem === 'more'
+    ? MORE_PAGE_TITLES[morePage]
     : activeItem === 'home'
       ? '오늘 기록'
       : NAVIGATION_ITEMS.find((item) => item.id === activeItem)?.label;
@@ -502,6 +539,12 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
       onClickCapture={blockInteractionDuringRecommendation}
       onKeyDownCapture={blockInteractionDuringRecommendation}
       onPointerDownCapture={blockInteractionDuringRecommendation}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && panelOpen) {
+          event.preventDefault();
+          closeNavigationMenu();
+        }
+      }}
     >
       <KakaoMap
         theme={theme}
@@ -514,19 +557,6 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
         onSelectLocation={selectLocation}
         onSelectRestaurant={selectSearchedRestaurant}
       />
-
-      <button
-        className={styles.menuButton}
-        type="button"
-        aria-label={filterOpen ? '검색 조건 닫기' : '검색 조건 열기'}
-        aria-expanded={filterOpen}
-        aria-controls="map-filter-panel"
-        onClick={() => setFilterOpen((open) => !open)}
-      >
-        {filterOpen
-          ? <X aria-hidden="true" strokeWidth={2.2} />
-          : <Menu aria-hidden="true" strokeWidth={2.2} />}
-      </button>
 
       <aside
         id="map-filter-panel"
@@ -601,12 +631,17 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
                 <MapPin aria-hidden="true" />
                 <span>{recommendation.roadAddress || recommendation.address}</span>
               </p>
+              {recommendationDistance !== undefined && (
+                <p>
+                  <Crosshair aria-hidden="true" />
+                  <span>{recommendationDistance}</span>
+                </p>
+              )}
             </div>
             <div className={styles.resultActions}>
               <button
                 type="button"
                 className={savedLists.like ? styles.savedAction : ''}
-                data-label="좋아요"
                 aria-pressed={savedLists.like}
                 aria-busy={savingList === 'like'}
                 aria-label={savingList === 'like'
@@ -624,11 +659,11 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
                 ) : (
                   <ThumbsUp aria-hidden="true" fill={savedLists.like ? 'currentColor' : 'none'} />
                 )}
+                <span>좋아요</span>
               </button>
               <button
                 type="button"
                 className={savedLists.exclusion ? styles.savedAction : ''}
-                data-label="싫어요"
                 aria-pressed={savedLists.exclusion}
                 aria-busy={savingList === 'exclusion'}
                 aria-label={savingList === 'exclusion'
@@ -646,15 +681,17 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
                 ) : (
                   <ThumbsDown aria-hidden="true" fill={savedLists.exclusion ? 'currentColor' : 'none'} />
                 )}
+                <span>싫어요</span>
               </button>
               <button
                 type="button"
                 className={temporarilyExcluded ? styles.savedAction : ''}
-                data-label="지금은 싫어요"
+                aria-label="지금은 싫어요"
                 aria-pressed={temporarilyExcluded}
                 onClick={temporarilyExcludeRecommendation}
               >
-                <Clock3 aria-hidden="true" />
+                <Clock3 aria-hidden="true" strokeWidth={temporarilyExcluded ? 3 : 2} />
+                <span>지금은 싫어요</span>
               </button>
             </div>
             <a
@@ -683,15 +720,27 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
         <Crosshair aria-hidden="true" strokeWidth={2.2} />
       </button>
 
-      <button
-        className={styles.rouletteButton}
-        type="button"
-        aria-label={recommending ? '음식점 탐색 중' : '룰렛으로 음식점 추천'}
-        onClick={() => void recommendRestaurant()}
-        disabled={recommending || locating}
-      >
-        <Dices aria-hidden="true" strokeWidth={2.2} />
-      </button>
+      <div className={styles.rouletteControls} role="group" aria-label="룰렛과 설정">
+        <button
+          className={styles.rouletteButton}
+          type="button"
+          aria-label={recommending ? '음식점 탐색 중' : '룰렛으로 음식점 추천'}
+          onClick={() => void recommendRestaurant()}
+          disabled={recommending || locating}
+        >
+          <Dices aria-hidden="true" strokeWidth={2.2} />
+        </button>
+        <button
+          className={styles.settingsButton}
+          type="button"
+          aria-label={filterOpen ? '룰렛 설정 닫기' : '룰렛 설정 열기'}
+          aria-expanded={filterOpen}
+          aria-controls="map-filter-panel"
+          onClick={() => setFilterOpen((open) => !open)}
+        >
+          <Settings aria-hidden="true" strokeWidth={2.2} />
+        </button>
+      </div>
 
       {recommending && (
         <div className={styles.interactionLock} role="status" aria-live="polite">
@@ -704,24 +753,24 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
           className={styles.sheetBackdrop}
           type="button"
           aria-label="사이드 패널 닫기"
-          onClick={() => setPanelOpen(false)}
+          onClick={closeNavigationMenu}
         />
       )}
 
       <section
+        id="navigation-side-panel"
         className={`${styles.sidePanel} ${panelOpen ? styles.sidePanelOpen : ''}`}
         aria-hidden={!panelOpen}
+        inert={!panelOpen}
       >
         <header className={styles.sidePanelHeader}>
-          {activeItem === 'more' && (accountManagementOpen || themeSettingsOpen) && (
+          {activeItem === 'more' && morePage !== 'main' && (
             <button
+              key={morePage}
               className={styles.sidePanelBackButton}
               type="button"
-              aria-label="더보기로 돌아가기"
-              onClick={() => {
-                setAccountManagementOpen(false);
-                setThemeSettingsOpen(false);
-              }}
+              aria-label={policyDocumentOpen ? '약관 및 정책으로 돌아가기' : '더보기로 돌아가기'}
+              onClick={() => setMorePage(policyDocumentOpen ? 'policies' : 'main')}
               autoFocus
             >
               <ArrowLeft aria-hidden="true" />
@@ -732,12 +781,12 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
             className={styles.sidePanelCloseButton}
             type="button"
             aria-label="사이드 패널 닫기"
-            onClick={() => setPanelOpen(false)}
+            onClick={closeNavigationMenu}
           >
             <X aria-hidden="true" strokeWidth={2.2} />
           </button>
         </header>
-        <div className={styles.sheetContent}>
+        <div className={styles.sheetContent} key={activeItem === 'more' ? morePage : activeItem}>
           {panelOpen && activeItem === 'home' && (
             <TodayRecordTab
               rouletteLogs={rouletteLogs}
@@ -758,27 +807,24 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
             />
           )}
           {panelOpen && activeItem === 'more' && (
-            accountManagementOpen && user ? (
+            morePage === 'account' && user ? (
               <AccountManagement
                 onWithdrawn={handleWithdrawn}
               />
-            ) : themeSettingsOpen ? (
+            ) : morePage === 'theme' ? (
               <ThemeSettings
                 theme={theme}
                 pinColor={pinColor}
                 onThemeChange={onThemeChange}
                 onPinColorChange={onPinColorChange}
               />
+            ) : morePage === 'policies' || morePage === 'terms' || morePage === 'privacy' ? (
+              <Policies page={morePage} onSelectDocument={setMorePage} />
             ) : (
               <MoreTab
-                onOpenAccountManagement={() => {
-                  setThemeSettingsOpen(false);
-                  setAccountManagementOpen(true);
-                }}
-                onOpenThemeSettings={() => {
-                  setAccountManagementOpen(false);
-                  setThemeSettingsOpen(true);
-                }}
+                onOpenAccountManagement={() => setMorePage('account')}
+                onOpenThemeSettings={() => setMorePage('theme')}
+                onOpenPolicies={() => setMorePage('policies')}
                 user={user}
                 checkingSession={authChecking}
                 onLoggedOut={handleLoggedOut}
@@ -788,29 +834,50 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
         </div>
       </section>
 
-      <nav className={styles.bottomBar} aria-label="주요 메뉴">
-        {NAVIGATION_ITEMS.map(({ id, label, Icon }) => {
-          const selected = activeItem === id;
-          return (
-            <button
-              key={id}
-              className={selected ? styles.activeNavigationItem : styles.navigationItem}
-              type="button"
-              aria-label={label}
-              aria-pressed={selected && panelOpen}
-              onClick={() => selectNavigationItem(id)}
-            >
-              <Icon
-                aria-hidden="true"
-                fill={selected && (id === 'likes' || id === 'exclusions')
-                  ? 'currentColor'
-                  : 'none'}
-                strokeWidth={2.1}
-              />
-            </button>
-          );
-        })}
-      </nav>
+      <div className={`${styles.bottomBar} ${panelOpen ? styles.bottomBarOpen : ''}`}>
+        <button
+          ref={navigationToggleRef}
+          className={styles.navigationToggle}
+          type="button"
+          aria-label="메뉴와 사이드 패널 열기"
+          aria-expanded={panelOpen}
+          aria-controls="floating-navigation navigation-side-panel"
+          aria-hidden={panelOpen}
+          inert={panelOpen}
+          onClick={openNavigationMenu}
+        >
+          <Menu aria-hidden="true" strokeWidth={2.2} />
+        </button>
+        <nav
+          id="floating-navigation"
+          className={styles.bottomNavigation}
+          aria-label="주요 메뉴"
+          aria-hidden={!panelOpen}
+          inert={!panelOpen}
+        >
+          {NAVIGATION_ITEMS.map(({ id, label, Icon }) => {
+            const selected = panelOpen && activeItem === id;
+            return (
+              <button
+                key={id}
+                className={selected ? styles.activeNavigationItem : styles.navigationItem}
+                type="button"
+                aria-label={label}
+                aria-pressed={selected}
+                onClick={() => selectNavigationItem(id)}
+              >
+                <Icon
+                  aria-hidden="true"
+                  fill={selected && (id === 'likes' || id === 'exclusions')
+                    ? 'currentColor'
+                    : 'none'}
+                  strokeWidth={2.1}
+                />
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
       {permissionDialog && (
         <div className={styles.modalBackdrop} role="presentation">
