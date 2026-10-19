@@ -8,6 +8,7 @@ import styles from './MoreTab.module.css';
 interface MoreTabProps {
   onOpenAccountManagement(): void;
   onOpenThemeSettings(): void;
+  onOpenPolicies(): void;
   user?: AuthUser;
   checkingSession: boolean;
   onLoggedOut(): void;
@@ -16,6 +17,7 @@ interface MoreTabProps {
 export default function MoreTab({
   onOpenAccountManagement,
   onOpenThemeSettings,
+  onOpenPolicies,
   user,
   checkingSession,
   onLoggedOut,
@@ -84,9 +86,13 @@ export default function MoreTab({
   return (
     <>
       {accountContent}
-      <div className={styles.themeSettings}>
-        <button className={styles.themeToggle} type="button" onClick={onOpenThemeSettings}>
+      <div className={styles.menuItems}>
+        <button className={styles.menuItem} type="button" onClick={onOpenThemeSettings}>
           <span>테마 설정</span>
+          <ChevronRight aria-hidden="true" />
+        </button>
+        <button className={styles.menuItem} type="button" onClick={onOpenPolicies}>
+          <span>약관 및 정책</span>
           <ChevronRight aria-hidden="true" />
         </button>
       </div>

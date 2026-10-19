@@ -1,0 +1,76 @@
+.document {
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.document > :first-child {
+  margin-top: 0;
+}
+
+.document h1,
+.document h2,
+.document h3,
+.document h4,
+.document h5,
+.document h6 {
+  margin: 24px 0 12px;
+  line-height: 1.4;
+}
+
+.document h1 {
+  font-size: 22px;
+}
+
+.document h2 {
+  font-size: 19px;
+}
+
+.document h3,
+.document h4,
+.document h5,
+.document h6 {
+  font-size: 16px;
+}
+
+.document p,
+.document ul,
+.document ol {
+  margin: 12px 0;
+}
+
+.document ul,
+.document ol {
+  padding-left: 24px;
+}
+
+.document a {
+  color: var(--color-accent);
+  text-underline-offset: 3px;
+}
+
+.document blockquote {
+  margin: 16px 0;
+  padding-left: 14px;
+  color: var(--color-text-subtle);
+  border-left: 3px solid var(--color-border-strong);
+}
+
+.document pre {
+  padding: 12px;
+  overflow: auto;
+  background: var(--color-surface-muted);
+  border-radius: 8px;
+}
+
+.document img {
+  max-width: 100%;
+  height: auto;
+}
+
+.document hr {
+  margin: 24px 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
