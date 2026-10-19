@@ -5,6 +5,8 @@ export interface Member {
   kakaoId: string;
   nickname: string;
   writeVersion: number;
+  defaultLikeListName?: string;
+  likeLists?: { id: string; name: string }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -12,6 +14,10 @@ export const MemberSchema = new Schema<Member>({
   kakaoId: { type: String, required: true, unique: true },
   nickname: { type: String, required: true, maxlength: 100 },
   writeVersion: { type: Number, default: 0 },
+  defaultLikeListName: { type: String, maxlength: 30 },
+  likeLists: { type: [{ _id: false, id: { type: String, required: true },
+    name: { type: String, required: true, maxlength: 30 } }], default: undefined,
+    validate: (lists: unknown[]) => lists.length <= 2 },
 }, { timestamps: true, collection: 'users' });
 
 export interface LoginSession { tokenHash: string; userId: Types.ObjectId; expiresAt: Date }
