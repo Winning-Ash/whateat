@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Dices } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Dices } from 'lucide-react';
 import type { LikeListsState } from '../../../../hooks/like-lists';
 import styles from './LikedRestaurantRandomizer.module.css';
 
@@ -59,13 +59,24 @@ export default function LikedRestaurantRandomizer({
 
       <label className={styles.category}>
         <select
+          aria-label="룰렛 카테고리 선택"
           value={selectedList?.id ?? ''}
           disabled={loading || saving || Boolean(error) || rolling || !selectedList}
           onChange={(event) => likeLists.selectList(event.target.value)}
         >
+          <button type="button">
+            <span className={styles.categoryName}>
+              {selectedList?.name ?? (loading ? '불러오는 중' : '목록 없음')}
+            </span>
+          </button>
           {!selectedList && <option value="">{loading ? '불러오는 중' : '목록 없음'}</option>}
-          {lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+          {lists.map((list) => (
+            <option key={list.id} value={list.id}>
+              <span className={styles.categoryName}>{list.name}</span>
+            </option>
+          ))}
         </select>
+        <ChevronDown aria-hidden="true" />
       </label>
 
       {selectedRestaurant && !rolling && (

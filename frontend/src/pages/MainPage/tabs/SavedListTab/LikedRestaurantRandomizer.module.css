@@ -1,5 +1,6 @@
 .randomizer {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   width: min(100%, 560px);
   margin: 0 auto 18px;
@@ -61,7 +62,9 @@
 }
 
 .category {
+  position: relative;
   display: grid;
+  min-width: 0;
   gap: 7px;
   color: var(--color-text-subtle);
   font-size: 12px;
@@ -70,9 +73,14 @@
 
 .category select {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   min-height: 40px;
-  padding: 8px 10px;
+  overflow: hidden;
+  padding: 8px 36px 8px 10px;
+  text-overflow: clip;
+  white-space: nowrap;
+  appearance: none;
   color: var(--color-text);
   background: var(--color-surface);
   border: 1px solid var(--color-accent-border);
@@ -81,6 +89,72 @@
 
 .category select:disabled {
   opacity: 0.55;
+}
+
+.category > svg {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.category select:disabled + svg {
+  opacity: 0.55;
+}
+
+.categoryName {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+@supports (appearance: base-select) and selector(select::picker(select)) {
+  .category select,
+  .category select::picker(select) {
+    appearance: base-select;
+  }
+
+  .category select::picker-icon {
+    display: none;
+  }
+
+  .category select > button {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0;
+    color: inherit;
+    text-align: left;
+    background: transparent;
+    border: 0;
+  }
+
+  .category select::picker(select) {
+    box-sizing: border-box;
+    width: anchor-size(width);
+    min-width: 0;
+    max-width: anchor-size(width);
+    overflow-x: hidden;
+    color: var(--color-text);
+    background: var(--color-surface);
+    border: 1px solid var(--color-accent-border);
+    border-radius: 9px;
+  }
+
+  .category option {
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    padding: 8px 10px;
+    white-space: nowrap;
+  }
 }
 
 .rollingIcon {
