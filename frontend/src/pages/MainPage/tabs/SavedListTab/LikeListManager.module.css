@@ -1,0 +1,129 @@
+.manager {
+  display: grid;
+  gap: 16px;
+}
+
+.listActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+
+.listActions button {
+  display: grid;
+  width: 32px;
+  height: 36px;
+  padding: 0;
+  color: var(--color-text-subtle);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  place-items: center;
+}
+
+.listActions button:last-child {
+  color: var(--color-list-delete);
+}
+
+.listActions button:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.listActions svg,
+.addButton svg {
+  flex: none;
+  width: 17px;
+  height: 17px;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.editor {
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.editor input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 10px;
+}
+
+.editor > span {
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  text-align: right;
+}
+
+.editor p,
+.error p {
+  margin: 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.editorActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.editorActions button,
+.error button,
+.editor > button {
+  min-height: 42px;
+  padding: 10px 14px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.editorActions button {
+  flex: 1;
+}
+
+.editorActions button:last-child {
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.manager button:disabled,
+.editor button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.error,
+.status {
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.6;
+}

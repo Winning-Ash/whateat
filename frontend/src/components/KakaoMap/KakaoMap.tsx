@@ -32,6 +32,7 @@ interface KakaoMapProps {
 }
 
 const DEFAULT_LOCATION = { lat: 37.5665, lng: 126.978 };
+const CURRENT_LOCATION_LEVEL = 4;
 const MAP_SEARCH_COOLDOWN_MS = 1000;
 
 export default function KakaoMap({
@@ -303,7 +304,7 @@ export default function KakaoMap({
         const initialLocation = selectedLocationRef.current ?? DEFAULT_LOCATION;
         map = new maps.Map(mapContainer, {
           center: new maps.LatLng(initialLocation.lat, initialLocation.lng),
-          level: 4,
+          level: CURRENT_LOCATION_LEVEL,
           draggable: !isSearchingRef.current,
           scrollwheel: !isSearchingRef.current,
         });
@@ -437,6 +438,7 @@ export default function KakaoMap({
     const map = mapRef.current;
     if (!maps || !map) return;
 
+    map.setLevel(CURRENT_LOCATION_LEVEL);
     map.setCenter(createPosition(maps, location));
   }, [locationFocusKey]);
 

@@ -7,6 +7,7 @@ export interface KakaoMapInstance {
   relayout(): void;
   getCenter(): KakaoLatLng;
   setCenter(position: KakaoLatLng): void;
+  setLevel(level: number): void;
   setDraggable(draggable: boolean): void;
   setZoomable(zoomable: boolean): void;
   getProjection(): KakaoMapProjection;

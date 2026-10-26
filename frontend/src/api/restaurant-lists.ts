@@ -1,14 +1,40 @@
-import { ExclusionsResponse, LikesResponse, Restaurant } from '../types';
+import type { ExclusionsResponse, LikeListResponse, LikeListsResponse, LikesResponse, Restaurant } from '../types';
 import { apiRequest } from './client';
 
 type RestaurantSummary = Pick<Restaurant, 'id' | 'name'>;
 
-export function getLikes(): Promise<LikesResponse> {
-  return apiRequest<LikesResponse>('/users/me/likes');
+export function getLikeLists(): Promise<LikeListsResponse> {
+  return apiRequest<LikeListsResponse>('/users/me/like-lists');
 }
 
-export function addLike(restaurant: RestaurantSummary): Promise<void> {
-  return apiRequest<void>('/users/me/likes', {
+export function createLikeList(name: string): Promise<LikeListResponse> {
+  return apiRequest<LikeListResponse>('/users/me/like-lists', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameLikeList(listId: string, name: string): Promise<void> {
+  return apiRequest<void>(`/users/me/like-lists/${encodeURIComponent(listId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteLikeList(listId: string): Promise<void> {
+  return apiRequest<void>(`/users/me/like-lists/${encodeURIComponent(listId)}`, {
+    method: 'DELETE',
+  });
+}
+
+export function getLikes(listId: string): Promise<LikesResponse> {
+  return apiRequest<LikesResponse>(`/users/me/like-lists/${encodeURIComponent(listId)}/likes`);
+}
+
+export function addLike(listId: string, restaurant: RestaurantSummary): Promise<void> {
+  return apiRequest<void>(`/users/me/like-lists/${encodeURIComponent(listId)}/likes`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -18,8 +44,8 @@ export function addLike(restaurant: RestaurantSummary): Promise<void> {
   });
 }
 
-export function removeLike(restaurantId: string): Promise<void> {
-  return apiRequest<void>(`/users/me/likes/${encodeURIComponent(restaurantId)}`, {
+export function removeLike(listId: string, restaurantId: string): Promise<void> {
+  return apiRequest<void>(`/users/me/like-lists/${encodeURIComponent(listId)}/likes/${encodeURIComponent(restaurantId)}`, {
     method: 'DELETE',
   });
 }

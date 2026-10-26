@@ -60,6 +60,29 @@
   height: 17px;
 }
 
+.category {
+  display: grid;
+  gap: 7px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.category select {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent-border);
+  border-radius: 9px;
+}
+
+.category select:disabled {
+  opacity: 0.55;
+}
+
 .rollingIcon {
   animation: dice-roll 500ms linear infinite;
 }

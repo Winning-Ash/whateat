@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { ChevronDown, Trash2 } from 'lucide-react';
 import styles from './RestaurantList.module.css';
 
@@ -15,6 +15,8 @@ interface RestaurantListProps {
   items: RestaurantListItem[];
   loading?: boolean;
   errorMessage?: string;
+  disabled?: boolean;
+  headerActions?: ReactNode;
   formatTimestamp(value: string): string;
   onRemove?(id: string | number): Promise<void>;
 }
@@ -27,6 +29,8 @@ export default function RestaurantList({
   items,
   loading = false,
   errorMessage,
+  disabled = false,
+  headerActions,
   formatTimestamp,
   onRemove,
 }: RestaurantListProps) {
@@ -57,22 +61,34 @@ export default function RestaurantList({
   return (
     <div className={styles.listContainer}>
       <section className={styles.listSection}>
-        <h3 className={styles.listHeader}>
+        <div className={styles.listHeading}>
+          <h3 className={styles.listHeader}>
+            <button
+              className={styles.listToggle}
+              type="button"
+              aria-expanded={expanded}
+              aria-controls={contentId}
+              onClick={() => setExpanded((current) => !current)}
+            >
+              <span className={styles.listTitle}>{title}</span>
+              <span className={styles.listCount}>{items.length}</span>
+            </button>
+          </h3>
+          {headerActions}
           <button
-            className={styles.listToggle}
+            className={styles.listCollapseButton}
             type="button"
+            aria-label={`${title} 목록 ${expanded ? '접기' : '펴기'}`}
             aria-expanded={expanded}
             aria-controls={contentId}
             onClick={() => setExpanded((current) => !current)}
           >
-            <span className={styles.listTitle}>{title}</span>
-            <span className={styles.listCount}>{items.length}</span>
             <ChevronDown
               className={`${styles.listChevron} ${expanded ? styles.listChevronExpanded : ''}`}
               aria-hidden="true"
             />
           </button>
-        </h3>
+        </div>
         {description && <p className={styles.listDescription}>{description}</p>}
         {expanded && (
           <div id={contentId} className={styles.listContent}>
@@ -97,7 +113,7 @@ export default function RestaurantList({
                         type="button"
                         aria-label={`${item.name} 목록에서 삭제`}
                         title="목록에서 삭제"
-                        disabled={removingId === item.id}
+                        disabled={disabled || removingId !== undefined}
                         onClick={() => void removeItem(item)}
                       >
                         <Trash2 aria-hidden="true" />

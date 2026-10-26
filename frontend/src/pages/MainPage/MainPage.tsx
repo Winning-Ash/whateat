@@ -16,17 +16,15 @@ import {
 } from 'lucide-react';
 import {
   addExclusion,
-  addLike,
   ApiError,
   getCurrentUser,
   getExclusions,
-  getLikes,
   getRandomRestaurant,
   removeExclusion,
-  removeLike,
 } from '../../api';
 import KakaoMap, { MapLocation } from '../../components/KakaoMap/KakaoMap';
 import { getCurrentLocation, LocationError } from '../../hooks';
+import { useLikeLists } from '../../hooks/like-lists';
 import {
   addLocalRestaurant,
   addTemporaryExclusion,
@@ -53,6 +51,7 @@ import SavedListTab from './tabs/SavedListTab/SavedListTab';
 import TodayRecordTab, {
   type RouletteLogEntry,
 } from './tabs/TodayRecordTab/TodayRecordTab';
+import LikeSaveDialog from './LikeSaveDialog';
 import styles from './MainPage.module.css';
 
 type PermissionDialog = 'request' | 'denied';
@@ -131,11 +130,11 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   const [filterOpen, setFilterOpen] = useState(false);
   const [recommending, setRecommending] = useState(false);
   const [recommendation, setRecommendation] = useState<Restaurant>();
+  const [likeDialogOpen, setLikeDialogOpen] = useState(false);
   const [savingList, setSavingList] = useState<'like' | 'exclusion'>();
   const savingListInProgress = useRef(false);
   const [resultMessage, setResultMessage] = useState<string>();
   const [listStorage, setListStorage] = useState<'server' | 'local'>();
-  const [likes, setLikes] = useState<SavedRestaurant[]>([]);
   const [exclusions, setExclusions] = useState<SavedRestaurant[]>([]);
   const [temporaryExclusions, setTemporaryExclusions] = useState<TemporarySavedRestaurant[]>(
     () => getTemporaryExclusionList(),
@@ -150,7 +149,15 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   const [panelOpen, setPanelOpen] = useState(false);
   const navigationToggleRef = useRef<HTMLButtonElement>(null);
 
+  const handleLoggedOut = useCallback(() => {
+    setUser(undefined);
+    setListStorage('local');
+    setLikeDialogOpen(false);
+  }, []);
+  const likeLists = useLikeLists(listStorage, handleLoggedOut);
+
   const selectLocation = useCallback((location: MapLocation) => {
+    setLikeDialogOpen(false);
     setSelectedLocation(location);
     setRecommendation(undefined);
     setResultMessage(undefined);
@@ -158,6 +165,7 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   }, []);
 
   const selectSearchedRestaurant = useCallback((restaurant: Restaurant) => {
+    setLikeDialogOpen(false);
     setRecommendation(restaurant);
     setResultMessage(undefined);
     setNotice(undefined);
@@ -246,17 +254,12 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
 
       try {
         if (listStorage === 'local') {
-          setLikes(getLocalRestaurantList('likes'));
           setExclusions(getLocalRestaurantList('exclusions'));
           return;
         }
 
-        const [likesResponse, exclusionsResponse] = await Promise.all([
-          getLikes(),
-          getExclusions(),
-        ]);
+        const exclusionsResponse = await getExclusions();
         if (!active) return;
-        setLikes(likesResponse.likes);
         setExclusions(exclusionsResponse.exclusions);
       } catch (error) {
         if (!active) return;
@@ -309,6 +312,7 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
     }
 
     setRecommending(true);
+    setLikeDialogOpen(false);
     setRecommendation(undefined);
     setResultMessage(undefined);
     setNotice(undefined);
@@ -361,7 +365,7 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
     : undefined;
   const savedLists = {
     like: recommendation
-      ? likes.some((item) => item.restaurantId === recommendation.id)
+      ? likeLists.allLikedIds.has(recommendation.id)
       : false,
     exclusion: recommendation
       ? exclusions.some((item) => item.restaurantId === recommendation.id)
@@ -370,17 +374,15 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   const temporarilyExcluded = recommendation
     ? temporaryExclusions.some((item) => item.restaurantId === recommendation.id)
     : false;
-  const savedListsUnavailable = !listStorage || listsLoading || Boolean(listsError);
+  const savedListsUnavailable = !listStorage || listsLoading || Boolean(listsError)
+    || likeLists.loading || likeLists.saving || Boolean(likeLists.error);
+  const likedInAnyList = recommendation ? likeLists.allLikedIds.has(recommendation.id) : false;
   const blockedListActions = {
     like: !savedLists.like && (savedLists.exclusion || savedListsUnavailable),
-    exclusion: !savedLists.exclusion && (savedLists.like || savedListsUnavailable),
+    exclusion: !savedLists.exclusion && (likedInAnyList || savedListsUnavailable),
   };
 
-  function updateListState(
-    target: 'like' | 'exclusion',
-    saved: boolean,
-    restaurant: Restaurant,
-  ) {
+  function updateExclusionState(saved: boolean, restaurant: Restaurant) {
     const update = (items: SavedRestaurant[]) => saved
       ? [{
         restaurantId: restaurant.id,
@@ -389,23 +391,30 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
       }, ...items.filter((item) => item.restaurantId !== restaurant.id)]
       : items.filter((item) => item.restaurantId !== restaurant.id);
 
-    if (target === 'like') setLikes(update);
-    else setExclusions(update);
+    setExclusions(update);
   }
 
   async function saveRecommendation(target: 'like' | 'exclusion') {
     if (!recommendation || savingListInProgress.current) return;
 
+    if (savedListsUnavailable) {
+      setResultMessage('저장한 목록을 확인한 뒤 다시 시도해 주세요.');
+      return;
+    }
+
     if (blockedListActions[target]) {
-      const oppositeSaved = target === 'like' ? savedLists.exclusion : savedLists.like;
+      const oppositeSaved = target === 'like' ? savedLists.exclusion : likedInAnyList;
       setResultMessage(oppositeSaved
-        ? `먼저 ${target === 'like' ? '싫어요' : '좋아요'} 선택을 해제해 주세요.`
+        ? (target === 'like'
+          ? '먼저 싫어요 선택을 해제해 주세요.'
+          : '먼저 모든 좋아요 목록에서 이 가게를 제거해 주세요.')
         : '저장한 목록을 확인한 뒤 다시 시도해 주세요.');
       return;
     }
 
-    if (target === 'like' && !savedLists.like && likes.length >= MAX_SAVED_LIKES) {
-      setResultMessage(`좋아요는 최대 ${MAX_SAVED_LIKES}개까지 저장할 수 있습니다.`);
+    if (target === 'like') {
+      setResultMessage(undefined);
+      setLikeDialogOpen(true);
       return;
     }
 
@@ -415,39 +424,58 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
 
     try {
       const saved = savedLists[target];
-      const localType = target === 'like' ? 'likes' : 'exclusions';
-
       if (listStorage === 'local') {
-        if (saved) removeLocalRestaurant(localType, recommendation.id);
-        else addLocalRestaurant(localType, recommendation);
+        if (saved) removeLocalRestaurant('exclusions', recommendation.id);
+        else addLocalRestaurant('exclusions', recommendation);
+      } else if (saved) {
+        await removeExclusion(recommendation.id);
       } else {
-        if (target === 'like') {
-          if (saved) await removeLike(recommendation.id);
-          else await addLike(recommendation);
-        } else if (saved) {
-          await removeExclusion(recommendation.id);
-        } else {
-          await addExclusion(recommendation);
-        }
+        await addExclusion(recommendation);
       }
 
-      updateListState(target, !saved, recommendation);
+      updateExclusionState(!saved, recommendation);
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         try {
           const saved = savedLists[target];
-          const localType = target === 'like' ? 'likes' : 'exclusions';
-          if (saved) removeLocalRestaurant(localType, recommendation.id);
-          else addLocalRestaurant(localType, recommendation);
+          if (saved) removeLocalRestaurant('exclusions', recommendation.id);
+          else addLocalRestaurant('exclusions', recommendation);
           setUser(undefined);
           setListStorage('local');
-          updateListState(target, !saved, recommendation);
+          updateExclusionState(!saved, recommendation);
         } catch {
           setResultMessage('브라우저에 가게를 저장하지 못했습니다.');
         }
       } else {
         setResultMessage('가게를 저장하지 못했습니다. 다시 시도해 주세요.');
       }
+    } finally {
+      savingListInProgress.current = false;
+      setSavingList(undefined);
+    }
+  }
+
+  async function saveLikedRecommendation(listIds: string[]) {
+    if (!recommendation || savingListInProgress.current || savedListsUnavailable) {
+      throw new Error('저장한 목록을 확인한 뒤 다시 시도해 주세요.');
+    }
+    const addingToList = likeLists.lists.some((list) => listIds.includes(list.id)
+      && !list.likes.some((item) => item.restaurantId === recommendation.id));
+    if (addingToList && savedLists.exclusion) {
+      throw new Error('먼저 싫어요 선택을 해제해 주세요.');
+    }
+    if (listIds.length > 0 && !likedInAnyList && likeLists.allLikedIds.size >= MAX_SAVED_LIKES) {
+      throw new Error(`좋아요는 최대 ${MAX_SAVED_LIKES}개까지 저장할 수 있습니다.`);
+    }
+
+    savingListInProgress.current = true;
+    setSavingList('like');
+    try {
+      await likeLists.saveRestaurant(recommendation, listIds);
+      setResultMessage(undefined);
+    } catch (error) {
+      setResultMessage(error instanceof Error ? error.message : '좋아요를 저장하지 못했습니다.');
+      throw error;
     } finally {
       savingListInProgress.current = false;
       setSavingList(undefined);
@@ -469,21 +497,20 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   }
 
   const closeRecommendation = useCallback(() => {
+    setLikeDialogOpen(false);
     setRecommendation(undefined);
     setResultMessage(undefined);
   }, []);
 
   async function removeSavedRestaurant(
-    type: 'likes' | 'exclusions' | 'temporaryExclusions',
+    type: 'exclusions' | 'temporaryExclusions',
     restaurantId: string,
   ) {
     try {
       if (type === 'temporaryExclusions') {
         removeTemporaryExclusion(restaurantId);
       } else if (listStorage === 'local') {
-        removeLocalRestaurant(type, restaurantId);
-      } else if (type === 'likes') {
-        await removeLike(restaurantId);
+        removeLocalRestaurant('exclusions', restaurantId);
       } else {
         await removeExclusion(restaurantId);
       }
@@ -497,23 +524,15 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
 
     if (type === 'temporaryExclusions') {
       setTemporaryExclusions(getTemporaryExclusionList());
-    } else if (type === 'likes') {
-      setLikes((items) => items.filter((item) => item.restaurantId !== restaurantId));
-    } else {
+    } else if (type === 'exclusions') {
       setExclusions((items) => items.filter((item) => item.restaurantId !== restaurantId));
     }
-  }
-
-  function handleLoggedOut() {
-    setUser(undefined);
-    setListStorage('local');
   }
 
   function handleWithdrawn() {
     clearLocalRestaurantLists();
     setMorePage('main');
     setUser(undefined);
-    setLikes([]);
     setExclusions([]);
     setTemporaryExclusions([]);
     setListStorage('local');
@@ -642,16 +661,17 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
               <button
                 type="button"
                 className={savedLists.like ? styles.savedAction : ''}
-                aria-pressed={savedLists.like}
+                aria-haspopup="dialog"
+                aria-expanded={likeDialogOpen}
                 aria-busy={savingList === 'like'}
                 aria-label={savingList === 'like'
-                  ? `좋아요 ${savedLists.like ? '삭제' : '저장'} 중`
-                  : '좋아요'}
+                  ? '좋아요 저장 중'
+                  : '좋아요 저장할 목록 선택'}
                 title={!savedLists.like && savedLists.exclusion
                   ? '싫어요 선택을 먼저 해제해 주세요.'
                   : undefined}
                 data-selection-blocked={blockedListActions.like}
-                disabled={savingList !== undefined || blockedListActions.like}
+                disabled={savingList !== undefined || savedListsUnavailable || blockedListActions.like}
                 onClick={() => void saveRecommendation('like')}
               >
                 {savingList === 'like' ? (
@@ -669,11 +689,11 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
                 aria-label={savingList === 'exclusion'
                   ? `싫어요 ${savedLists.exclusion ? '삭제' : '저장'} 중`
                   : '싫어요'}
-                title={!savedLists.exclusion && savedLists.like
-                  ? '좋아요 선택을 먼저 해제해 주세요.'
+                title={!savedLists.exclusion && likedInAnyList
+                  ? '모든 좋아요 목록에서 이 가게를 먼저 제거해 주세요.'
                   : undefined}
                 data-selection-blocked={blockedListActions.exclusion}
-                disabled={savingList !== undefined || blockedListActions.exclusion}
+                disabled={savingList !== undefined || savedListsUnavailable || blockedListActions.exclusion}
                 onClick={() => void saveRecommendation('exclusion')}
               >
                 {savingList === 'exclusion' ? (
@@ -798,11 +818,12 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
             && (activeItem === 'likes' || activeItem === 'exclusions')
             && listStorage && (
             <SavedListTab
-              key={activeItem}
+              key={`${activeItem}:${listStorage}`}
               listType={activeItem}
-              items={activeItem === 'likes' ? likes : exclusions}
-              loading={listsLoading}
-              errorMessage={listsError}
+              items={activeItem === 'likes' ? [] : exclusions}
+              loading={activeItem === 'likes' ? likeLists.loading : listsLoading}
+              errorMessage={activeItem === 'likes' ? likeLists.error : listsError}
+              likeLists={activeItem === 'likes' ? likeLists : undefined}
               onRemove={removeSavedRestaurant}
             />
           )}
@@ -878,6 +899,17 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
           })}
         </nav>
       </div>
+
+      {likeDialogOpen && recommendation && (
+        <LikeSaveDialog
+          key={recommendation.id}
+          restaurant={recommendation}
+          likeLists={likeLists}
+          saving={savingList === 'like'}
+          onSave={saveLikedRecommendation}
+          onClose={() => setLikeDialogOpen(false)}
+        />
+      )}
 
       {permissionDialog && (
         <div className={styles.modalBackdrop} role="presentation">

@@ -1,4 +1,5 @@
-import { Restaurant, SavedRestaurant } from '../types';
+import type { LikeListWithRestaurants, Restaurant, SavedRestaurant } from '../types';
+import { MAX_LIKE_LISTS, MAX_LIKE_LIST_NAME_LENGTH } from '../types';
 
 export type RestaurantListType = 'likes' | 'exclusions';
 
@@ -15,12 +16,55 @@ const STORAGE_KEYS: Record<RestaurantListType, string> = {
 };
 
 const MAX_LOCAL_ITEMS = 100;
+const LIKE_LISTS_KEY = 'whateat_guest_like_lists';
 const MAX_TEMPORARY_EXCLUSIONS = 50;
 const TEMPORARY_EXCLUSIONS_KEY = 'whateat_temporary_exclusions';
 const TEMPORARY_EXCLUSION_TTL_MS = 2 * 60 * 60 * 1000;
 
 export interface TemporarySavedRestaurant extends SavedRestaurant {
   expiresAt: number;
+}
+
+export function getLocalLikeLists(): LikeListWithRestaurants[] {
+  const value = window.localStorage.getItem(LIKE_LISTS_KEY);
+  if (value) {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed)
+      || parsed.length === 0
+      || parsed.length > MAX_LIKE_LISTS
+      || !parsed.every(isLocalLikeList)
+      || !parsed.some((list) => list.id === 'default')
+      || new Set(parsed.map((list) => list.id)).size !== parsed.length) {
+      throw new Error('브라우저의 좋아요 목록을 읽지 못했습니다.');
+    }
+    return parsed;
+  }
+
+  return [{ id: 'default', name: '기본', likes: getLocalRestaurantList('likes') }];
+}
+
+export function saveLocalLikeLists(lists: LikeListWithRestaurants[]): void {
+  window.localStorage.setItem(LIKE_LISTS_KEY, JSON.stringify(lists));
+  window.localStorage.removeItem(STORAGE_KEYS.likes);
+}
+
+function isLocalLikeList(value: unknown): value is LikeListWithRestaurants {
+  if (!value || typeof value !== 'object') return false;
+  const list = value as Partial<LikeListWithRestaurants>;
+  return typeof list.id === 'string'
+    && list.id.length > 0
+    && typeof list.name === 'string'
+    && Array.from(list.name.trim()).length >= 1
+    && Array.from(list.name.trim()).length <= MAX_LIKE_LIST_NAME_LENGTH
+    && Array.isArray(list.likes)
+    && list.likes.every((item: unknown) => {
+      if (!item || typeof item !== 'object') return false;
+      const restaurant = item as Partial<SavedRestaurant>;
+      return typeof restaurant.restaurantId === 'string'
+        && /^\d{1,20}$/.test(restaurant.restaurantId)
+        && typeof restaurant.restaurantName === 'string'
+        && typeof restaurant.createdAt === 'string';
+    });
 }
 
 export function getLocalRestaurantList(type: RestaurantListType): LocalSavedRestaurant[] {
@@ -123,6 +167,7 @@ export function clearLocalRestaurantLists(): void {
     window.localStorage.removeItem(key);
   }
   window.localStorage.removeItem(TEMPORARY_EXCLUSIONS_KEY);
+  window.localStorage.removeItem(LIKE_LISTS_KEY);
 }
 
 function isLocalSavedRestaurant(value: unknown): value is LocalSavedRestaurant {

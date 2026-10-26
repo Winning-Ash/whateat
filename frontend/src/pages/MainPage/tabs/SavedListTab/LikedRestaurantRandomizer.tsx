@@ -1,28 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowUpRight, Dices } from 'lucide-react';
-import { SavedRestaurant } from '../../../../types';
+import type { LikeListsState } from '../../../../hooks/like-lists';
 import styles from './LikedRestaurantRandomizer.module.css';
 
 interface LikedRestaurantRandomizerProps {
-  items: SavedRestaurant[];
-  loading: boolean;
+  likeLists: LikeListsState;
 }
 
 const ROLLING_DURATION_MS = 700;
 
 export default function LikedRestaurantRandomizer({
-  items,
-  loading,
+  likeLists,
 }: LikedRestaurantRandomizerProps) {
+  const { lists, selectedList, loading, saving, error } = likeLists;
+  const items = selectedList?.likes ?? [];
   const [selectedId, setSelectedId] = useState<string>();
   const [rolling, setRolling] = useState(false);
   const timeoutRef = useRef<number | undefined>(undefined);
   const selectedRestaurant = items.find((item) => item.restaurantId === selectedId);
 
-  useEffect(() => () => window.clearTimeout(timeoutRef.current), []);
+  useEffect(() => {
+    setSelectedId(undefined);
+    setRolling(false);
+    return () => window.clearTimeout(timeoutRef.current);
+  }, [selectedList?.id]);
 
   function selectRandomRestaurant() {
-    if (rolling || items.length === 0) return;
+    if (loading || saving || error || rolling || items.length === 0) return;
 
     const candidates = selectedRestaurant && items.length > 1
       ? items.filter((item) => item.restaurantId !== selectedRestaurant.restaurantId)
@@ -41,16 +45,28 @@ export default function LikedRestaurantRandomizer({
       <div className={styles.heading}>
         <div>
           <h3 id="liked-random-title">좋아요 랜덤</h3>
-          <p>좋아요로 저장한 가게 중 한 곳을 뽑습니다.</p>
+          <p>선택한 목록에 저장한 가게 중 한 곳을 뽑습니다.</p>
         </div>
         <button
           type="button"
-          disabled={loading || rolling || items.length === 0}
+          aria-label={rolling ? '좋아요 가게를 뽑는 중' : '선택한 목록에서 가게 뽑기'}
+          disabled={loading || saving || Boolean(error) || rolling || items.length === 0}
           onClick={selectRandomRestaurant}
         >
           <Dices className={rolling ? styles.rollingIcon : undefined} aria-hidden="true" />
         </button>
       </div>
+
+      <label className={styles.category}>
+        <select
+          value={selectedList?.id ?? ''}
+          disabled={loading || saving || Boolean(error) || rolling || !selectedList}
+          onChange={(event) => likeLists.selectList(event.target.value)}
+        >
+          {!selectedList && <option value="">{loading ? '불러오는 중' : '목록 없음'}</option>}
+          {lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}
+        </select>
+      </label>
 
       {selectedRestaurant && !rolling && (
         <a
