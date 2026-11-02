@@ -18,6 +18,9 @@ export function validateEnv(env: Record<string, unknown>) {
     throw new Error('MONGODB_DNS_SERVERS must be comma-separated DNS server IP addresses');
   }
   result.MONGODB_DNS_SERVERS = servers;
+  const serveFrontend = String(env.SERVE_FRONTEND || 'false');
+  if (!['true', 'false'].includes(serveFrontend)) throw new Error('SERVE_FRONTEND must be true or false');
+  result.SERVE_FRONTEND = serveFrontend === 'true';
   const production = env.NODE_ENV === 'production';
   const frontend = String(env.FRONTEND_ORIGIN || 'http://localhost:5173');
   try {

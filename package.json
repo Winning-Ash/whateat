@@ -4,6 +4,8 @@
   "scripts": {
     "build": "npm --prefix frontend run build && npm --prefix backend run build",
     "start:backend": "npm --prefix backend run start:dev",
-    "test": "npm --prefix backend test"
+    "test": "npm --prefix backend test",
+    "build:render": "node scripts/build-render.cjs",
+    "start": "npm --prefix backend start"
   }
 }
