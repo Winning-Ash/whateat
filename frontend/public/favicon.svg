@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 23.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="레이어_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px"
+	 y="0px" viewBox="0 0 64 64" style="enable-background:new 0 0 64 64;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#5151E5;}
+	.st1{fill:none;stroke:#FFFFFF;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;}
+	.st2{fill:#FFFFFF;}
+</style>
+<title  id="title">왓잇</title>
+<path class="st0" d="M16,0h32c8.8,0,16,7.2,16,16v32c0,8.8-7.2,16-16,16H16C7.2,64,0,56.8,0,48V16C0,7.2,7.2,0,16,0z"/>
+<path class="st1" d="M12,17l9,18l11-15l11,15l9-18"/>
+<path class="st2" d="M14,43h36c-3,9-9,13-18,13S17,52,14,43z"/>
+</svg>
