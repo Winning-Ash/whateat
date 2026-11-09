@@ -17,7 +17,7 @@ interface LikeSaveDialogProps {
 export default function LikeSaveDialog({ restaurant, likeLists, saving, onSave, onClose }: LikeSaveDialogProps) {
   const { lists, loading, saving: listsSaving, error } = likeLists;
   const [selectedIds, setSelectedIds] = useState(() => lists
-    .filter((list) => list.likes.some((item) => item.restaurantId === restaurant.id))
+    .filter((list, index) => index === 0 || list.likes.some((item) => item.restaurantId === restaurant.id))
     .map((list) => list.id));
   const [saveError, setSaveError] = useState<string>();
   const [newListOpen, setNewListOpen] = useState(false);

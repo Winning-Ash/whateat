@@ -20,6 +20,7 @@ import {
   getCurrentUser,
   getExclusions,
   getRandomRestaurant,
+  KAKAO_LOGIN_PENDING_KEY,
   removeExclusion,
 } from '../../api';
 import KakaoMap, { MapLocation } from '../../components/KakaoMap/KakaoMap';
@@ -125,6 +126,15 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   const [locating, setLocating] = useState(false);
   const [locationFocusKey, setLocationFocusKey] = useState(0);
   const [notice, setNotice] = useState<string>();
+  const [loginNotice, setLoginNotice] = useState<string>();
+  const [loginAttempt] = useState<'pending' | 'failed' | undefined>(() => {
+    if (new URLSearchParams(window.location.search).get('login') === 'failed') return 'failed';
+    try {
+      return window.sessionStorage.getItem(KAKAO_LOGIN_PENDING_KEY) === 'true' ? 'pending' : undefined;
+    } catch {
+      return undefined;
+    }
+  });
   const [radius, setRadius] = useState(300);
   const [category, setCategory] = useState<FoodCategory>();
   const [filterOpen, setFilterOpen] = useState(false);
@@ -222,26 +232,50 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   useEffect(() => {
     let active = true;
 
+    if (loginAttempt === 'failed') {
+      setLoginNotice('로그인에 실패했습니다.');
+      const url = new URL(window.location.href);
+      url.searchParams.delete('login');
+      window.history.replaceState(window.history.state, '', url);
+    }
+
     async function checkListStorage() {
       try {
         const response = await getCurrentUser();
         if (active) {
           setUser(response.user);
           setListStorage('server');
+          if (loginAttempt === 'pending') setLoginNotice('로그인에 성공했습니다.');
         }
       } catch (error) {
+        if (active && loginAttempt === 'pending') setLoginNotice('로그인에 실패했습니다.');
         if (active && error instanceof ApiError && error.status === 401) {
           setUser(undefined);
           setListStorage('local');
         }
       } finally {
-        if (active) setAuthChecking(false);
+        if (active) {
+          setAuthChecking(false);
+          if (loginAttempt) {
+            try {
+              window.sessionStorage.removeItem(KAKAO_LOGIN_PENDING_KEY);
+            } catch {
+              // Browser storage may be unavailable.
+            }
+          }
+        }
       }
     }
 
     void checkListStorage();
     return () => { active = false; };
-  }, []);
+  }, [loginAttempt]);
+
+  useEffect(() => {
+    if (!loginNotice) return;
+    const timeoutId = window.setTimeout(() => setLoginNotice(undefined), 3000);
+    return () => window.clearTimeout(timeoutId);
+  }, [loginNotice]);
 
   useEffect(() => {
     if (!listStorage) return;
@@ -729,6 +763,7 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
       )}
 
       {notice && <p className={styles.notice} role="status">{notice}</p>}
+      {loginNotice && <p className={styles.loginNotice} role="status">{loginNotice}</p>}
 
       <button
         className={styles.locationButton}

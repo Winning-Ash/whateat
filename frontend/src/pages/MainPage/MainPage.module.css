@@ -303,6 +303,26 @@
   clip-path: inset(50%);
 }
 
+.loginNotice {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top));
+  right: 16px;
+  left: 16px;
+  z-index: 300;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  margin: 0 auto;
+  padding: 12px 18px;
+  color: var(--color-text);
+  font-size: 14px;
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgb(0 0 0 / 16%);
+  pointer-events: none;
+}
+
 .notice {
   position: absolute;
   right: 16px;
