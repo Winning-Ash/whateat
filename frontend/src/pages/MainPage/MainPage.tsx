@@ -345,6 +345,7 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
       return;
     }
 
+    setLocationFocusKey((key) => key + 1);
     setRecommending(true);
     setLikeDialogOpen(false);
     setRecommendation(undefined);
