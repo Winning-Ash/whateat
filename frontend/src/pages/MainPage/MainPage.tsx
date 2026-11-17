@@ -159,6 +159,11 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   const [panelOpen, setPanelOpen] = useState(false);
   const navigationToggleRef = useRef<HTMLButtonElement>(null);
 
+  const closeNavigationMenu = useCallback(() => {
+    setPanelOpen(false);
+    window.requestAnimationFrame(() => navigationToggleRef.current?.focus());
+  }, []);
+
   const handleLoggedOut = useCallback(() => {
     setUser(undefined);
     setListStorage('local');
@@ -324,14 +329,13 @@ export default function MainPage({ theme, pinColor, onThemeChange, onPinColorCha
   }, [temporaryExclusions]);
 
   function selectNavigationItem(item: NavigationItem) {
+    if (panelOpen && activeItem === item) {
+      closeNavigationMenu();
+      return;
+    }
     setMorePage('main');
     setActiveItem(item);
     setPanelOpen(true);
-  }
-
-  function closeNavigationMenu() {
-    setPanelOpen(false);
-    window.requestAnimationFrame(() => navigationToggleRef.current?.focus());
   }
 
   function openNavigationMenu() {

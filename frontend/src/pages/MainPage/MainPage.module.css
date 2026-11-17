@@ -2,7 +2,7 @@
   --floating-left: 16px;
   --floating-button-size: 48px;
   --floating-button-radius: 14px;
-  --menu-animation-duration: 650ms;
+  --menu-animation-duration: 300ms;
   --menu-animation-easing: cubic-bezier(0.4, 0, 0.2, 1);
   --bottom-bar-height: var(--floating-button-size);
   --floating-bottom: max(16px, env(safe-area-inset-bottom));

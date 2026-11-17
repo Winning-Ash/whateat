@@ -1,3 +1,30 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.container > * {
+  flex-shrink: 0;
+}
+
+.serviceBrand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 32px;
+  color: var(--color-text-subtle);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.serviceBrand img {
+  display: block;
+  flex: none;
+}
+
 .loginSection,
 .accountSection {
   width: min(100%, 480px);

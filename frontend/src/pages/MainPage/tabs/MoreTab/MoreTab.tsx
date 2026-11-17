@@ -84,7 +84,7 @@ export default function MoreTab({
   );
 
   return (
-    <>
+    <div className={styles.container}>
       {accountContent}
       <div className={styles.menuItems}>
         <button className={styles.menuItem} type="button" onClick={onOpenThemeSettings}>
@@ -96,6 +96,10 @@ export default function MoreTab({
           <ChevronRight aria-hidden="true" />
         </button>
       </div>
-    </>
+      <footer className={styles.serviceBrand}>
+        <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" width={28} height={28} />
+        <span>WhatEat</span>
+      </footer>
+    </div>
   );
 }
