@@ -33,6 +33,8 @@ interface KakaoMapProps {
 
 const DEFAULT_LOCATION = { lat: 37.5665, lng: 126.978 };
 const CURRENT_LOCATION_LEVEL = 4;
+const MOBILE_MAP_MEDIA_QUERY = '(max-width: 600px)';
+const MOBILE_FOCUS_HEIGHT_RATIO = 0.3;
 const MAP_SEARCH_COOLDOWN_MS = 1000;
 
 export default function KakaoMap({
@@ -108,10 +110,15 @@ export default function KakaoMap({
       radarElementRef.current = element;
     }
 
-    radarElementRef.current.style.width = `${diameter}px`;
-    radarElementRef.current.style.height = `${diameter}px`;
+    const element = radarElementRef.current;
+    const size = `${diameter}px`;
+    const sizeChanged = element.style.width !== size || element.style.height !== size;
+    element.style.width = size;
+    element.style.height = size;
 
     if (radarOverlayRef.current) {
+      // Refresh the overlay's anchor offsets when its content size changes.
+      if (sizeChanged) radarOverlayRef.current.setContent(element);
       radarOverlayRef.current.setPosition(position);
       return;
     }
@@ -406,6 +413,31 @@ export default function KakaoMap({
     );
   }, [radius, selectedLocation, theme]);
 
+  // Apply the focus before measuring and displaying the radar at the new zoom level.
+  useEffect(() => {
+    const location = selectedLocationRef.current;
+    if (locationFocusKey === 0 || !location) return;
+
+    const maps = mapsRef.current;
+    const map = mapRef.current;
+    if (!maps || !map) return;
+
+    map.setLevel(CURRENT_LOCATION_LEVEL);
+    const position = createPosition(maps, location);
+    const container = containerRef.current;
+
+    if (container && window.matchMedia(MOBILE_MAP_MEDIA_QUERY).matches) {
+      const projection = map.getProjection();
+      const point = projection.pointFromCoords(position);
+      // Move the map center down so the selected location appears higher on screen.
+      const offsetY = container.clientHeight * (0.5 - MOBILE_FOCUS_HEIGHT_RATIO);
+      map.setCenter(projection.coordsFromPoint(new maps.Point(point.x, point.y + offsetY)));
+      return;
+    }
+
+    map.setCenter(position);
+  }, [locationFocusKey]);
+
   useEffect(() => {
     const maps = mapsRef.current;
     const map = mapRef.current;
@@ -429,18 +461,6 @@ export default function KakaoMap({
     if (!maps || !map) return;
     updateResultOverlay(maps, map, recommendation);
   }, [recommendation]);
-
-  useEffect(() => {
-    const location = selectedLocationRef.current;
-    if (locationFocusKey === 0 || !location) return;
-
-    const maps = mapsRef.current;
-    const map = mapRef.current;
-    if (!maps || !map) return;
-
-    map.setLevel(CURRENT_LOCATION_LEVEL);
-    map.setCenter(createPosition(maps, location));
-  }, [locationFocusKey]);
 
   return (
     <section className={styles.map} aria-label="위치 선택 지도">

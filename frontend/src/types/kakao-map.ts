@@ -20,6 +20,7 @@ export interface KakaoMapPoint {
 
 export interface KakaoMapProjection {
   pointFromCoords(position: KakaoLatLng): KakaoMapPoint;
+  coordsFromPoint(point: KakaoMapPoint): KakaoLatLng;
 }
 
 export interface KakaoMarkerInstance {
@@ -42,6 +43,7 @@ export interface KakaoCircleInstance {
 export interface KakaoCustomOverlayInstance {
   setMap(map: KakaoMapInstance | null): void;
   setPosition(position: KakaoLatLng): void;
+  setContent(content: HTMLElement): void;
 }
 
 export interface KakaoPlaceSearchResult {
@@ -73,6 +75,7 @@ export interface KakaoPlacesInstance {
 export interface KakaoMapsApi {
   load(callback: () => void): void;
   LatLng: new (lat: number, lng: number) => KakaoLatLng;
+  Point: new (x: number, y: number) => KakaoMapPoint;
   Map: new (
     container: HTMLElement,
     options: {
