@@ -74,3 +74,6 @@ npm run start:backend
 ```cmd
 npm --prefix frontend run dev
 ```
+
+## 라이센스
+이 프로젝트는 [MIT LICENSE](LICENSE)를 따릅니다.
